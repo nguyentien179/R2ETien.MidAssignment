@@ -503,3 +503,5 @@ D:\dotnet projects\R2ETien.MidAssignment\API\obj\Debug\net9.0\refint\mid-assignm
 D:\dotnet projects\R2ETien.MidAssignment\API\obj\Debug\net9.0\mid-assignment.pdb
 D:\dotnet projects\R2ETien.MidAssignment\API\obj\Debug\net9.0\mid-assignment.genruntimeconfig.cache
 D:\dotnet projects\R2ETien.MidAssignment\API\obj\Debug\net9.0\ref\mid-assignment.dll
+D:\dotnet projects\mid-assignment\API\bin\Debug\net9.0\Microsoft.AspNetCore.Authentication.JwtBearer.dll
+D:\dotnet projects\mid-assignment\API\obj\Debug\net9.0\mid-assignment.sourcelink.json

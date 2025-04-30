@@ -70,7 +70,7 @@ builder
             ValidateIssuerSigningKey = true,
             IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(key!)),
             ValidateIssuer = false,
-            ValidateAudience = false
+            ValidateAudience = false,
         };
 
         options.Events = new JwtBearerEvents
@@ -83,7 +83,7 @@ builder
                     context.Token = token;
                 }
                 return Task.CompletedTask;
-            }
+            },
         };
     });
 

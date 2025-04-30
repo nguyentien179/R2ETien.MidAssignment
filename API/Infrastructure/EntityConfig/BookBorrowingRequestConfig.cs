@@ -27,6 +27,7 @@ public class BookBorrowingRequestConfig : IEntityTypeConfiguration<BookBorrowing
             .HasConversion<string>()
             .HasMaxLength(15)
             .IsRequired();
+        builder.Property(b => b.RowVersion).IsRowVersion().IsConcurrencyToken();
 
         builder.Property(br => br.RequestedDate).IsRequired();
         builder.Property(br => br.DueDate).IsRequired();

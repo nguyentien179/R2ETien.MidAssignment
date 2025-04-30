@@ -1,4 +1,5 @@
 using System;
+using System.ComponentModel.DataAnnotations;
 using mid_assignment.Domain.Enum;
 
 namespace mid_assignment.Domain.Entities;
@@ -17,4 +18,7 @@ public class Book
     public ICollection<BookBorrowingRequestDetails>? BorrowingRequestDetails { get; set; }
     public ICollection<BookReview> Reviews { get; set; } = new List<BookReview>();
     public RequestStatus RequestStatus { get; internal set; }
+
+    [Timestamp]
+    public byte[] RowVersion { get; set; }
 }

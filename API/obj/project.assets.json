@@ -5043,19 +5043,19 @@
     ]
   },
   "packageFolders": {
-    "C:\\Users\\Tien\\.nuget\\packages\\": {}
+    "C:\\Users\\chens\\.nuget\\packages\\": {}
   },
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "D:\\dotnet projects\\R2ETien.MidAssignment\\API\\mid-assignment.csproj",
+      "projectUniqueName": "D:\\dotnet projects\\mid-assignment\\API\\mid-assignment.csproj",
       "projectName": "mid-assignment",
-      "projectPath": "D:\\dotnet projects\\R2ETien.MidAssignment\\API\\mid-assignment.csproj",
-      "packagesPath": "C:\\Users\\Tien\\.nuget\\packages\\",
-      "outputPath": "D:\\dotnet projects\\R2ETien.MidAssignment\\API\\obj\\",
+      "projectPath": "D:\\dotnet projects\\mid-assignment\\API\\mid-assignment.csproj",
+      "packagesPath": "C:\\Users\\chens\\.nuget\\packages\\",
+      "outputPath": "D:\\dotnet projects\\mid-assignment\\API\\obj\\",
       "projectStyle": "PackageReference",
       "configFilePaths": [
-        "C:\\Users\\Tien\\AppData\\Roaming\\NuGet\\NuGet.Config"
+        "C:\\Users\\chens\\AppData\\Roaming\\NuGet\\NuGet.Config"
       ],
       "originalTargetFrameworks": [
         "net9.0"
@@ -5145,7 +5145,7 @@
             "privateAssets": "all"
           }
         },
-        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.203/PortableRuntimeIdentifierGraph.json"
+        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.202/PortableRuntimeIdentifierGraph.json"
       }
     }
   }

@@ -9,7 +9,9 @@ public class BookConfig : IEntityTypeConfiguration<Book>
 {
     public void Configure(EntityTypeBuilder<Book> builder)
     {
-        builder.ToTable("Book");
+        builder.ToTable(b =>
+            b.HasCheckConstraint("CK_Book_Quantity_NonNegative", "[Quantity] >= 0")
+        );
         builder
             .HasOne(b => b.Category)
             .WithMany(c => c.Books)
@@ -20,6 +22,7 @@ public class BookConfig : IEntityTypeConfiguration<Book>
         builder.Property(b => b.Author).IsRequired().HasMaxLength(50);
         builder.Property(b => b.Name).IsRequired().HasMaxLength(40);
         builder.Property(b => b.Quantity).IsRequired();
+        builder.Property(b => b.RowVersion).IsRowVersion().IsConcurrencyToken();
 
         builder.HasIndex(b => b.Name).IsUnique();
     }

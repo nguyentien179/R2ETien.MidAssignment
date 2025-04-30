@@ -1,6 +1,7 @@
 using System;
 using System.Linq.Expressions;
 using System.Security.Claims;
+using Microsoft.EntityFrameworkCore;
 using mid_assignment.Application.Common.Constants;
 using mid_assignment.Application.Common.Models;
 using mid_assignment.Application.Interfaces;
@@ -138,11 +139,28 @@ public class BookBorrowingRequestService : IBookBorrowingRequestService
 
         foreach (var book in books)
         {
-            book.Quantity += change * details.Count(d => d.BookId == book.BookId);
+            int changeAmount = change * details.Count(d => d.BookId == book.BookId);
+            int newQuantity = book.Quantity + changeAmount;
+
+            if (newQuantity < 0)
+            {
+                throw new InvalidOperationException($"Not enough copies of book {book.Name}.");
+            }
+
+            book.Quantity = newQuantity;
             _bookRepository.Update(book);
         }
 
-        await _bookRepository.SaveChangesAsync();
+        try
+        {
+            await _bookRepository.SaveChangesAsync();
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            throw new InvalidOperationException(
+                "Book inventory was modified by another request. Please try again."
+            );
+        }
     }
 
     public async Task DeleteAsync(Guid id)
@@ -185,13 +203,14 @@ public class BookBorrowingRequestService : IBookBorrowingRequestService
         var request =
             await _repository.GetByIdAsync(requestId)
             ?? throw new KeyNotFoundException(ErrorMessages.RequestNotFound);
+
         var approverId = _userService.GetCurrentUserId();
         if (!approverId.HasValue)
         {
             throw new UnauthorizedAccessException(ErrorMessages.Forbidden);
         }
 
-        if (requestStatus != RequestStatus.WAITING)
+        if (request.RequestStatus != RequestStatus.WAITING)
         {
             throw new InvalidOperationException(ErrorMessages.RequestProcessed);
         }
@@ -206,21 +225,29 @@ public class BookBorrowingRequestService : IBookBorrowingRequestService
             foreach (var detail in request.BorrowingRequestDetails)
             {
                 var book = await _bookRepository.GetByIdAsync(detail.BookId);
-                if (book != null)
-                {
-                    book.Quantity += 1;
-                    _bookRepository.Update(book);
-                }
-                else
-                {
+                if (book == null)
                     throw new KeyNotFoundException($"Book with ID {detail.BookId} not found.");
-                }
+
+                book.Quantity += 1;
+                _bookRepository.Update(book);
             }
         }
+
         request.ApproverId = approverId;
         _repository.Update(request);
-        await _repository.SaveChangesAsync();
-        await _bookRepository.SaveChangesAsync();
+
+        try
+        {
+            await _repository.SaveChangesAsync();
+            await _bookRepository.SaveChangesAsync();
+        }
+        catch (DbUpdateConcurrencyException ex)
+        {
+            throw new InvalidOperationException(
+                "The request was modified by another user. Please reload and try again.",
+                ex
+            );
+        }
     }
 
     public async Task ExtendDueDate(Guid requestId)
