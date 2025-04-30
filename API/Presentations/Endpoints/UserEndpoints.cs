@@ -25,6 +25,18 @@ public static class UserEndpoints
             .MapPost("/register", RegisterAsync)
             .AddEndpointFilter<ValidationFilter<UserRegisterDTO>>();
         userGroup.MapPost("/login", LoginAsync).AddEndpointFilter<ValidationFilter<UserLoginDTO>>();
+        userGroup.MapPost("/logout", LogoutAsync).RequireAuthorization();
+    }
+
+    private static async Task<IResult> LogoutAsync([FromServices] IUserService service)
+    {
+        var userId = service.GetCurrentUserId();
+        if (userId == null)
+        {
+            return Results.Unauthorized();
+        }
+        await service.LogoutAsync(userId.Value);
+        return Results.Ok("Logout successful.");
     }
 
     private static async Task<IResult> GetAllAsync(
@@ -78,18 +90,31 @@ public static class UserEndpoints
 
     private static async Task<IResult> LoginAsync(
         [FromBody] UserLoginDTO dto,
-        [FromServices] IUserService service
+        [FromServices] IUserService service,
+        HttpContext httpContext
     )
     {
         var result = await service.LoginAsync(dto);
-        var (user, token) = result.Value;
+        var (user, token, refreshToken) = result.Value;
+        httpContext.Response.Cookies.Append(
+            "AccessToken",
+            token,
+            new CookieOptions
+            {
+                HttpOnly = true,
+                Secure = true,
+                SameSite = SameSiteMode.Strict,
+                Expires = DateTime.UtcNow.AddMinutes(60)
+            }
+        );
 
         return Results.Ok(
             new
             {
-                Token = token,
                 Username = user.Username,
                 Email = user.Email,
+                Token = token,
+                RefreshToken = refreshToken,
             }
         );
     }

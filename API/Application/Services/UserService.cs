@@ -11,6 +11,7 @@ using mid_assignment.Domain.Entities;
 using mid_assignment.Domain.Enum;
 using mid_assignment.Infrastructure.Repositories.Interfaces;
 using mid_assignment.Mapping;
+using mid_assignment.Presentations.DTO.Token;
 using mid_assignment.Presentations.DTO.User;
 
 namespace mid_assignment.Application.Services;
@@ -32,7 +33,7 @@ public class UserService : IUserService
         _httpContextAccessor = httpContextAccessor;
     }
 
-    public async Task<(User User, string Token)?> LoginAsync(UserLoginDTO dto)
+    public async Task<(User User, string Token, string RefreshToken)?> LoginAsync(UserLoginDTO dto)
     {
         var user = await _userRepository.GetUserByUsernameOrEmailAsync(dto.UsernameOrEmail);
 
@@ -46,8 +47,12 @@ public class UserService : IUserService
             throw new UnauthorizedAccessException("Invalid credentials.");
         }
 
+        user.RefreshToken = GenerateRefreshToken();
+        user.RefreshTokenExpiryTime = DateTime.UtcNow.AddDays(30);
+        _userRepository.Update(user);
+
         string token = GenerateJwtToken(user);
-        return (user, token);
+        return (user, token, user.RefreshToken);
     }
 
     public async Task RegisterAsync(UserRegisterDTO dto)
@@ -80,6 +85,18 @@ public class UserService : IUserService
 
         var user = dto.ToEntity(hashedPassword, saltString);
         await _userRepository.RegisterAsync(user);
+    }
+
+    public async Task LogoutAsync(Guid userId)
+    {
+        var user =
+            await _userRepository.GetByIdAsync(userId)
+            ?? throw new Exception(ErrorMessages.UserNotFound);
+        user.RefreshToken = null;
+        user.RefreshTokenExpiryTime = null;
+
+        _userRepository.Update(user);
+        await _userRepository.SaveChangesAsync();
     }
 
     private string HashPassword(string password, string salt)
@@ -191,5 +208,32 @@ public class UserService : IUserService
         var userDTOs = users.Select(br => br.ToDTO());
 
         return userDTOs;
+    }
+
+    private static string GenerateRefreshToken()
+    {
+        var randomNumber = new byte[32];
+        using var rng = RandomNumberGenerator.Create();
+        rng.GetBytes(randomNumber);
+        return Convert.ToBase64String(randomNumber);
+    }
+
+    public async Task<TokenResponseDTO?> RefreshTokenAsync(string refreshToken)
+    {
+        var user = await _userRepository.GetByRefreshTokenAsync(refreshToken);
+
+        if (user == null || user.RefreshTokenExpiryTime <= DateTime.UtcNow)
+            throw new UnauthorizedAccessException(ErrorMessages.InvalidReFreshToken);
+
+        var newAccessToken = GenerateJwtToken(user);
+        var newRefreshToken = GenerateRefreshToken();
+
+        user.RefreshToken = newRefreshToken;
+        user.RefreshTokenExpiryTime = DateTime.UtcNow.AddDays(7);
+
+        _userRepository.Update(user);
+        await _userRepository.SaveChangesAsync();
+
+        return new TokenResponseDTO(newAccessToken, newRefreshToken);
     }
 }

@@ -45,4 +45,7 @@ public static class ErrorMessages
 
     //Review
     public const string ReviewNotFound = "Review with this ID is not found";
+
+    //Token
+    public const string InvalidReFreshToken = "The resfresh token is not valid or expired.";
 }

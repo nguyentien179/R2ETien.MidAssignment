@@ -6,6 +6,8 @@ namespace mid_assignment.Domain.Entities;
 public class User
 {
     public Guid Id { get; set; } = Guid.NewGuid();
+    public string? RefreshToken { get; set; }
+    public DateTime? RefreshTokenExpiryTime { get; set; }
     public required string Username { get; set; }
     public required string Email { get; set; }
     public required string Password { get; set; }

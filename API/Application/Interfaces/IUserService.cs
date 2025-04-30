@@ -1,6 +1,7 @@
 using System;
 using System.Linq.Expressions;
 using mid_assignment.Domain.Entities;
+using mid_assignment.Presentations.DTO.Token;
 using mid_assignment.Presentations.DTO.User;
 
 namespace mid_assignment.Application.Interfaces;
@@ -15,8 +16,10 @@ public interface IUserService
         int? pageSize = null
     );
     Task<UserDTO?> GetByIdAsync(Guid id);
-    Task<(User User, string Token)?> LoginAsync(UserLoginDTO dto);
+    Task<(User User, string Token, string RefreshToken)?> LoginAsync(UserLoginDTO dto);
     Task RegisterAsync(UserRegisterDTO dto);
+    Task LogoutAsync(Guid userId);
+    Task<TokenResponseDTO?> RefreshTokenAsync(string token);
     Guid? GetCurrentUserId();
     bool IsAdmin();
 }

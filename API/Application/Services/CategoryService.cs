@@ -36,6 +36,10 @@ public class CategoryService : ICategoryService
         var category =
             await _categoryRepository.GetByIdAsync(id)
             ?? throw new KeyNotFoundException(ErrorMessages.NotFound);
+        if (category.Books?.Count > 0)
+        {
+            throw new InvalidOperationException("There are still books that have this category.");
+        }
         _categoryRepository.Delete(category);
         await _categoryRepository.SaveChangesAsync();
     }

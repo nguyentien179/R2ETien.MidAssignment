@@ -1,4 +1,5 @@
 using System;
+using System.Security.Cryptography;
 using Microsoft.EntityFrameworkCore;
 using mid_assignment.Domain.Entities;
 using mid_assignment.Infrastructure.Data;
@@ -27,5 +28,10 @@ public class UserRepository : GeneralRepository<User>, IUserRepository
     {
         await _context.Users.AddAsync(user);
         await _context.SaveChangesAsync();
+    }
+
+    public async Task<User?> GetByRefreshTokenAsync(string refreshToken)
+    {
+        return await _context.Users.FirstOrDefaultAsync(u => u.RefreshToken == refreshToken);
     }
 }

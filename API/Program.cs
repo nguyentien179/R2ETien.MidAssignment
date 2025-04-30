@@ -1,7 +1,10 @@
 using System.Security.Claims;
+using System.Text;
 using System.Threading.RateLimiting;
 using FluentValidation;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 using mid_assignment.Application;
 using mid_assignment.Infrastructure.Data;
 using mid_assignment.Middleware;
@@ -47,13 +50,42 @@ builder.Services.AddRateLimiter(options =>
     // Add custom response when limit is exceeded
     options.OnRejected = async (context, token) =>
     {
-        context.HttpContext.Response.StatusCode = 429; // Too Many Requests
+        context.HttpContext.Response.StatusCode = 429;
         await context.HttpContext.Response.WriteAsync(
             "You've exceeded the maximum of 3 borrowing requests per month. Please try again later.",
             token
         );
     };
 });
+
+//Only read access token from cookie
+builder
+    .Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        var key = builder.Configuration["JwtSettings:SecretKey"];
+
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuerSigningKey = true,
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(key!)),
+            ValidateIssuer = false,
+            ValidateAudience = false
+        };
+
+        options.Events = new JwtBearerEvents
+        {
+            OnMessageReceived = context =>
+            {
+                var token = context.Request.Cookies["AccessToken"];
+                if (!string.IsNullOrEmpty(token))
+                {
+                    context.Token = token;
+                }
+                return Task.CompletedTask;
+            }
+        };
+    });
 
 var app = builder.Build();
 
