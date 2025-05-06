@@ -1,0 +1,15 @@
+to run the client, cd Client then run npm i then run npm run dev in the terminal
+to run the server, cd API then run dotnet run in the terminal
+to run the tests, cd API then run dotnet test
+
+default account:
+
+Admin:
+username: admin
+email: admin@gmail.com
+pw: Khongduocnoi1!
+
+User:
+username: user
+email: user@gmail.com  
+ pw: Khongduocnoi1!

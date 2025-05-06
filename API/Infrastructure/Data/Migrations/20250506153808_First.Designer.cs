@@ -12,8 +12,8 @@ using mid_assignment.Infrastructure.Data;
 namespace mid_assignment.Infrastructure.Data.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20250430100541_Third")]
-    partial class Third
+    [Migration("20250506153808_First")]
+    partial class First
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -158,10 +158,9 @@ namespace mid_assignment.Infrastructure.Data.Migrations
 
                     b.HasKey("BookReviewId");
 
-                    b.HasIndex("UserId");
+                    b.HasIndex("BookId");
 
-                    b.HasIndex("BookId", "UserId")
-                        .IsUnique();
+                    b.HasIndex("UserId");
 
                     b.ToTable("BookReview", (string)null);
                 });

@@ -30,6 +30,8 @@ namespace mid_assignment.Infrastructure.Data.Migrations
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    RefreshToken = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    RefreshTokenExpiryTime = table.Column<DateTime>(type: "datetime2", nullable: true),
                     Username = table.Column<string>(type: "nvarchar(30)", maxLength: 30, nullable: false),
                     Email = table.Column<string>(type: "nvarchar(40)", maxLength: 40, nullable: false),
                     Password = table.Column<string>(type: "nvarchar(max)", nullable: false),
@@ -43,21 +45,24 @@ namespace mid_assignment.Infrastructure.Data.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "Book",
+                name: "Books",
                 columns: table => new
                 {
                     BookId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    ImageUrl = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     Name = table.Column<string>(type: "nvarchar(40)", maxLength: 40, nullable: false),
                     Author = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
                     Quantity = table.Column<int>(type: "int", nullable: false),
                     CategoryId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    RequestStatus = table.Column<int>(type: "int", nullable: false)
+                    RequestStatus = table.Column<int>(type: "int", nullable: false),
+                    RowVersion = table.Column<byte[]>(type: "rowversion", rowVersion: true, nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_Book", x => x.BookId);
+                    table.PrimaryKey("PK_Books", x => x.BookId);
+                    table.CheckConstraint("CK_Book_Quantity_NonNegative", "[Quantity] >= 0");
                     table.ForeignKey(
-                        name: "FK_Book_Category_CategoryId",
+                        name: "FK_Books_Category_CategoryId",
                         column: x => x.CategoryId,
                         principalTable: "Category",
                         principalColumn: "CategoryId",
@@ -74,7 +79,8 @@ namespace mid_assignment.Infrastructure.Data.Migrations
                     Extended = table.Column<bool>(type: "bit", nullable: false),
                     RequestStatus = table.Column<string>(type: "nvarchar(15)", maxLength: 15, nullable: false),
                     ApproverId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
-                    DueDate = table.Column<DateOnly>(type: "date", nullable: false)
+                    DueDate = table.Column<DateOnly>(type: "date", nullable: false),
+                    RowVersion = table.Column<byte[]>(type: "rowversion", rowVersion: true, nullable: false)
                 },
                 constraints: table =>
                 {
@@ -88,6 +94,34 @@ namespace mid_assignment.Infrastructure.Data.Migrations
                     table.ForeignKey(
                         name: "FK_BookBorrowingRequest_User_RequestorId",
                         column: x => x.RequestorId,
+                        principalTable: "User",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "BookReview",
+                columns: table => new
+                {
+                    BookReviewId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    Rating = table.Column<int>(type: "int", nullable: false),
+                    Comment = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    ReviewDate = table.Column<DateOnly>(type: "date", nullable: false),
+                    BookId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    UserId = table.Column<Guid>(type: "uniqueidentifier", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_BookReview", x => x.BookReviewId);
+                    table.ForeignKey(
+                        name: "FK_BookReview_Books_BookId",
+                        column: x => x.BookId,
+                        principalTable: "Books",
+                        principalColumn: "BookId",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_BookReview_User_UserId",
+                        column: x => x.UserId,
                         principalTable: "User",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
@@ -111,9 +145,9 @@ namespace mid_assignment.Infrastructure.Data.Migrations
                         principalColumn: "RequestId",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
-                        name: "FK_BookBorrowingRequestDetails_Book_BookId",
+                        name: "FK_BookBorrowingRequestDetails_Books_BookId",
                         column: x => x.BookId,
-                        principalTable: "Book",
+                        principalTable: "Books",
                         principalColumn: "BookId",
                         onDelete: ReferentialAction.Restrict);
                 });
@@ -127,17 +161,6 @@ namespace mid_assignment.Infrastructure.Data.Migrations
                     { new Guid("22222222-2222-2222-2222-222222222222"), "Science" },
                     { new Guid("33333333-3333-3333-3333-333333333333"), "History" }
                 });
-
-            migrationBuilder.CreateIndex(
-                name: "IX_Book_CategoryId",
-                table: "Book",
-                column: "CategoryId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_Book_Name",
-                table: "Book",
-                column: "Name",
-                unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_BookBorrowingRequest_ApproverId",
@@ -158,6 +181,27 @@ namespace mid_assignment.Infrastructure.Data.Migrations
                 name: "IX_BookBorrowingRequestDetails_RequestId",
                 table: "BookBorrowingRequestDetails",
                 column: "RequestId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_BookReview_BookId",
+                table: "BookReview",
+                column: "BookId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_BookReview_UserId",
+                table: "BookReview",
+                column: "UserId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Books_CategoryId",
+                table: "Books",
+                column: "CategoryId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Books_Name",
+                table: "Books",
+                column: "Name",
+                unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_Category_Name",
@@ -185,10 +229,13 @@ namespace mid_assignment.Infrastructure.Data.Migrations
                 name: "BookBorrowingRequestDetails");
 
             migrationBuilder.DropTable(
+                name: "BookReview");
+
+            migrationBuilder.DropTable(
                 name: "BookBorrowingRequest");
 
             migrationBuilder.DropTable(
-                name: "Book");
+                name: "Books");
 
             migrationBuilder.DropTable(
                 name: "User");

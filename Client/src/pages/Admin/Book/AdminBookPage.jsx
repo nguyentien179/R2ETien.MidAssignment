@@ -5,7 +5,8 @@ import { Link } from "react-router-dom";
 
 const AdminBooksPage = () => {
   const [books, setBooks] = useState([]);
-  const [searchQuery, setSearchQuery] = useState("");
+  const [nameFilter, setNameFilter] = useState("");
+  const [authorFilter, setAuthorFilter] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("");
   const [sortOrder, setSortOrder] = useState("");
   const [categories, setCategories] = useState([]);
@@ -29,9 +30,11 @@ const AdminBooksPage = () => {
     const fetchBooks = async () => {
       try {
         const params = new URLSearchParams();
-        if (searchQuery) {
-          params.append("nameFilter", searchQuery);
-          params.append("authorFilter", searchQuery);
+        if (nameFilter) {
+          params.append("nameFilter", nameFilter);
+        }
+        if (authorFilter) {
+          params.append("authorFilter", authorFilter);
         }
         if (categoryFilter) {
           const selectedCategory = categories.find(
@@ -59,11 +62,14 @@ const AdminBooksPage = () => {
     };
 
     fetchBooks();
-  }, [API_URL, searchQuery, categoryFilter, sortOrder, categories]);
-
-  const handleSearchChange = (event) => {
-    setSearchQuery(event.target.value);
-  };
+  }, [
+    API_URL,
+    nameFilter,
+    authorFilter,
+    categoryFilter,
+    sortOrder,
+    categories,
+  ]);
 
   const handleCategoryChange = (event) => {
     setCategoryFilter(event.target.value);
@@ -116,16 +122,30 @@ const AdminBooksPage = () => {
 
       <div className="mb-4 flex items-center space-x-4">
         <div className="flex items-center">
-          <label htmlFor="search" className="mr-2">
-            Search:
+          <label htmlFor="nameSearch" className="mr-2">
+            Title:
           </label>
           <input
             type="text"
-            id="search"
+            id="nameSearch"
             className="border border-gray-300 rounded-md p-2"
-            placeholder="Title or Author"
-            value={searchQuery}
-            onChange={handleSearchChange}
+            placeholder="Title"
+            value={nameFilter}
+            onChange={(e) => setNameFilter(e.target.value)}
+          />
+        </div>
+
+        <div className="flex items-center ml-4">
+          <label htmlFor="authorSearch" className="mr-2">
+            Author:
+          </label>
+          <input
+            type="text"
+            id="authorSearch"
+            className="border border-gray-300 rounded-md p-2"
+            placeholder="Author"
+            value={authorFilter}
+            onChange={(e) => setAuthorFilter(e.target.value)}
           />
         </div>
 
