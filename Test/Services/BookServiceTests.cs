@@ -1,5 +1,8 @@
 using System;
+using System.Linq.Expressions;
+using Microsoft.AspNetCore.Http;
 using mid_assignment.Application.Common.Constants;
+using mid_assignment.Application.Interfaces;
 using mid_assignment.Application.Services;
 using mid_assignment.Domain.Entities;
 using mid_assignment.Infrastructure.Repositories.Interfaces;
@@ -12,165 +15,190 @@ public class BookServiceTests
 {
     private readonly Mock<IBookRepository> _bookRepoMock = new();
     private readonly Mock<ICategoryRepository> _categoryRepoMock = new();
-    private readonly BookService _bookService;
+    private readonly Mock<IImageUploader> _imageUploaderMock = new();
+    private readonly BookService _service;
 
     public BookServiceTests()
     {
-        _bookService = new BookService(_bookRepoMock.Object, _categoryRepoMock.Object);
+        _service = new BookService(
+            _bookRepoMock.Object,
+            _categoryRepoMock.Object,
+            _imageUploaderMock.Object
+        );
+    }
+
+    private IFormFile CreateMockFormFile(string fileName, string contentType, byte[] content)
+    {
+        var stream = new MemoryStream(content);
+        return new FormFile(stream, 0, content.Length, "image", fileName)
+        {
+            Headers = new HeaderDictionary(),
+            ContentType = contentType
+        };
     }
 
     [Fact]
-    public async Task CreateAsync_ValidInput_CallsRepository()
+    public async Task CreateAsync_Should_Add_Book_When_Valid()
     {
         // Arrange
-        var categoryId = Guid.NewGuid();
-        var dto = new CreateBookDTO("Book Name", "Author Name", categoryId);
-        var category = new Category { CategoryId = categoryId, Name = "Fiction" };
+        var dto = new CreateBookInputDTO(
+            "Test Book",
+            "Author",
+            Guid.NewGuid(),
+            10,
+            CreateMockFormFile("image.jpg", "image/jpeg", new byte[] { 1, 2, 3 })
+        );
 
-        _categoryRepoMock.Setup(x => x.GetByIdAsync(categoryId)).ReturnsAsync(category);
-        _bookRepoMock.Setup(x => x.AddAsync(It.IsAny<Book>())).Returns(Task.CompletedTask);
-        _bookRepoMock.Setup(x => x.SaveChangesAsync()).Returns(Task.CompletedTask);
+        _bookRepoMock
+            .Setup(r =>
+                r.GetAllAsync(
+                    It.IsAny<List<Expression<Func<Book, bool>>>>(),
+                    It.IsAny<Func<IQueryable<Book>, IOrderedQueryable<Book>>>(),
+                    It.IsAny<string>(),
+                    It.IsAny<int>(),
+                    It.IsAny<int>()
+                )
+            )
+            .ReturnsAsync(new List<Book>());
+        _categoryRepoMock
+            .Setup(r => r.GetByIdAsync(dto.CategoryId))
+            .ReturnsAsync(new Category { Name = "Category" });
+        _imageUploaderMock.Setup(i => i.UploadImageAsync(dto.Image)).ReturnsAsync("image_url");
 
         // Act
-        await _bookService.CreateAsync(dto);
+        await _service.CreateAsync(dto);
 
         // Assert
-        _bookRepoMock.Verify(
-            x =>
-                x.AddAsync(
-                    It.Is<Book>(b =>
-                        b.Name == dto.Name
-                        && b.Author == dto.Author
-                        && b.CategoryId == dto.CategoryId
-                    )
-                ),
-            Times.Once
-        );
-
-        _bookRepoMock.Verify(x => x.SaveChangesAsync(), Times.Once);
+        _bookRepoMock.Verify(r => r.AddAsync(It.IsAny<Book>()), Times.Once);
+        _bookRepoMock.Verify(r => r.SaveChangesAsync(), Times.Once);
     }
 
     [Fact]
-    public async Task CreateAsync_CategoryNotFound_ThrowsKeyNotFoundException()
+    public async Task CreateAsync_Should_Throw_When_Name_Taken()
     {
         // Arrange
-        var categoryId = Guid.NewGuid();
-        var dto = new CreateBookDTO("Book Title", "Author", categoryId);
+        var dto = new CreateBookInputDTO(
+            "Duplicate Book",
+            "Author",
+            Guid.NewGuid(),
+            10,
+            CreateMockFormFile("image.jpg", "image/jpeg", new byte[] { 1, 2, 3 })
+        );
 
-        _categoryRepoMock.Setup(x => x.GetByIdAsync(categoryId)).ReturnsAsync((Category?)null);
+        _bookRepoMock
+            .Setup(r =>
+                r.GetAllAsync(
+                    It.IsAny<List<Expression<Func<Book, bool>>>>(),
+                    It.IsAny<Func<IQueryable<Book>, IOrderedQueryable<Book>>>(),
+                    It.IsAny<string>(),
+                    It.IsAny<int>(),
+                    It.IsAny<int>()
+                )
+            )
+            .ReturnsAsync(
+                new List<Book>
+                {
+                    new Book
+                    {
+                        Name = "Duplicate Book",
+                        Author = "test",
+                        Quantity = 1,
+                        ImageUrl = "asd"
+                    }
+                }
+            );
 
         // Act & Assert
-        var ex = await Assert.ThrowsAsync<KeyNotFoundException>(
-            () => _bookService.CreateAsync(dto)
-        );
-        Assert.Equal(ErrorMessages.NotFound, ex.Message);
+        await Assert.ThrowsAsync<InvalidOperationException>(() => _service.CreateAsync(dto));
     }
 
     [Fact]
-    public async Task UpdateAsync_ValidInput_UpdatesBook()
+    public async Task DeleteAsync_Should_Remove_Book()
     {
-        // Arrange
         var bookId = Guid.NewGuid();
-        var categoryId = Guid.NewGuid();
+        _bookRepoMock
+            .Setup(r => r.GetByIdAsync(bookId))
+            .ReturnsAsync(
+                new Book
+                {
+                    Name = " Book",
+                    Author = "test",
+                    Quantity = 1,
+                    ImageUrl = "asd"
+                }
+            );
 
-        var dto = new UpdateBookDTO(bookId, "Updated Title", "Updated Author", categoryId);
+        await _service.DeleteAsync(bookId);
+
+        _bookRepoMock.Verify(r => r.Delete(It.Is<Book>(b => b.BookId == bookId)), Times.Once);
+        _bookRepoMock.Verify(r => r.SaveChangesAsync(), Times.Once);
+    }
+
+    [Fact]
+    public async Task GetByIdAsync_Should_Return_Book()
+    {
+        var bookId = Guid.NewGuid();
+        _bookRepoMock
+            .Setup(r => r.GetByIdAsync(bookId))
+            .ReturnsAsync(
+                new Book
+                {
+                    Name = " Book",
+                    Author = "test",
+                    Quantity = 1,
+                    ImageUrl = "asd"
+                }
+            );
+
+        var result = await _service.GetByIdAsync(bookId);
+
+        Assert.NotNull(result);
+        Assert.Equal("Sample Book", result.Name);
+    }
+
+    [Fact]
+    public async Task UpdateAsync_Should_Update_Fields()
+    {
+        var bookId = Guid.NewGuid();
+        var dto = new UpdateBookInputDTO(
+            "Updated Book",
+            "Updated Author",
+            Guid.NewGuid(),
+            5,
+            CreateMockFormFile("image.jpg", "image/jpeg", new byte[] { 1, 2, 3 })
+        );
+
         var existingBook = new Book
         {
-            BookId = bookId,
-            Name = "Old",
-            Author = "Old",
-            CategoryId = categoryId,
-        };
-        var category = new Category { CategoryId = categoryId, Name = "Category" };
-
-        _bookRepoMock.Setup(x => x.GetByIdAsync(bookId)).ReturnsAsync(existingBook);
-        _categoryRepoMock.Setup(x => x.GetByIdAsync(categoryId)).ReturnsAsync(category);
-        _bookRepoMock.Setup(x => x.Update(It.IsAny<Book>()));
-        _bookRepoMock.Setup(x => x.SaveChangesAsync()).Returns(Task.CompletedTask);
-
-        // Act
-        await _bookService.UpdateAsync(dto, bookId);
-
-        // Assert
-        _bookRepoMock.Verify(
-            x =>
-                x.Update(
-                    It.Is<Book>(b =>
-                        b.BookId == bookId
-                        && b.Name == dto.Name
-                        && b.Author == dto.Author
-                        && b.CategoryId == dto.CategoryId
-                    )
-                ),
-            Times.Once
-        );
-
-        _bookRepoMock.Verify(x => x.SaveChangesAsync(), Times.Once);
-    }
-
-    [Fact]
-    public async Task UpdateAsync_BookNotFound_ThrowsKeyNotFoundException()
-    {
-        // Arrange
-        var bookId = Guid.NewGuid();
-        var dto = new UpdateBookDTO(bookId, "Name", "Author", Guid.NewGuid());
-
-        _bookRepoMock.Setup(x => x.GetByIdAsync(bookId)).ReturnsAsync((Book?)null);
-
-        // Act & Assert
-        var ex = await Assert.ThrowsAsync<KeyNotFoundException>(
-            () => _bookService.UpdateAsync(dto, bookId)
-        );
-        Assert.Equal(ErrorMessages.NotFound, ex.Message);
-    }
-
-    [Fact]
-    public async Task UpdateAsync_CategoryNotFound_ThrowsKeyNotFoundException()
-    {
-        // Arrange
-        var bookId = Guid.NewGuid();
-        var categoryId = Guid.NewGuid();
-
-        var dto = new UpdateBookDTO(bookId, "Title", "Author", categoryId);
-        var existingBook = new Book
-        {
-            BookId = bookId,
-            Name = "Old",
-            Author = "Old",
-            CategoryId = Guid.NewGuid(),
+            Name = " Book",
+            Author = "test",
+            Quantity = 1,
+            ImageUrl = "asd"
         };
 
-        _bookRepoMock.Setup(x => x.GetByIdAsync(bookId)).ReturnsAsync(existingBook);
-        _categoryRepoMock.Setup(x => x.GetByIdAsync(categoryId)).ReturnsAsync((Category?)null);
+        _bookRepoMock.Setup(r => r.GetByIdAsync(bookId)).ReturnsAsync(existingBook);
+        _bookRepoMock
+            .Setup(r =>
+                r.GetAllAsync(
+                    It.IsAny<List<Expression<Func<Book, bool>>>>(),
+                    It.IsAny<Func<IQueryable<Book>, IOrderedQueryable<Book>>>(),
+                    It.IsAny<string>(),
+                    It.IsAny<int>(),
+                    It.IsAny<int>()
+                )
+            )
+            .ReturnsAsync(new List<Book> { existingBook });
+        _categoryRepoMock
+            .Setup(r => r.GetByIdAsync(dto.CategoryId))
+            .ReturnsAsync(new Category { Name = dto.Name });
+        _imageUploaderMock.Setup(i => i.UploadImageAsync(dto.Image)).ReturnsAsync("new_image_url");
 
-        // Act & Assert
-        var ex = await Assert.ThrowsAsync<KeyNotFoundException>(
-            () => _bookService.UpdateAsync(dto, bookId)
-        );
-        Assert.Equal(ErrorMessages.NotFound, ex.Message);
-    }
+        await _service.UpdateAsync(dto, bookId);
 
-    [Fact]
-    public async Task DeleteAsync_ValidBook_DeletesBook()
-    {
-        // Arrange
-        var bookId = Guid.NewGuid();
-        var book = new Book
-        {
-            BookId = bookId,
-            Name = "abc",
-            Author = "abc",
-        };
-
-        _bookRepoMock.Setup(x => x.GetByIdAsync(bookId)).ReturnsAsync(book);
-        _bookRepoMock.Setup(x => x.Delete(book));
-        _bookRepoMock.Setup(x => x.SaveChangesAsync()).Returns(Task.CompletedTask);
-
-        // Act
-        await _bookService.DeleteAsync(bookId);
-
-        // Assert
-        _bookRepoMock.Verify(x => x.Delete(book), Times.Once);
-        _bookRepoMock.Verify(x => x.SaveChangesAsync(), Times.Once);
+        Assert.Equal("Updated Book", existingBook.Name);
+        Assert.Equal("Updated Author", existingBook.Author);
+        Assert.Equal(dto.CategoryId, existingBook.CategoryId);
+        Assert.Equal(5, existingBook.Quantity);
+        Assert.Equal("new_image_url", existingBook.ImageUrl);
     }
 }

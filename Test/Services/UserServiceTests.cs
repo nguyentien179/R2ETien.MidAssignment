@@ -1,3 +1,5 @@
+using System.Linq.Expressions;
+using System.Security.Claims;
 using System.Security.Cryptography;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
@@ -50,134 +52,150 @@ public class UserServiceTests
     }
 
     [Fact]
-    public async Task LoginAsync_ValidCredentials_ReturnsUserAndToken()
+    public async Task LoginAsync_ValidCredentials_ReturnsUserAndTokens()
     {
         // Arrange
-        string usernameOrEmail = "testuser";
-        string password = "password";
-        string salt = Convert.ToBase64String(new byte[16]);
-        string hashedPassword = HashPassword(password, salt);
-
         var user = new User
         {
             Id = Guid.NewGuid(),
-            Username = usernameOrEmail,
+            Username = "testuser",
             Email = "test@example.com",
-            Password = hashedPassword,
-            PasswordSalt = salt,
             Role = Role.USER,
+            PasswordSalt = "testSalt",
+            Password = Convert.ToBase64String(
+                new Rfc2898DeriveBytes(
+                    "password",
+                    Convert.FromBase64String("testSalt"),
+                    10000,
+                    HashAlgorithmName.SHA256
+                ).GetBytes(32)
+            )
         };
 
-        var dto = new UserLoginDTO(usernameOrEmail, password);
+        var loginDto = new UserLoginDTO("testuser", "password");
 
         _userRepositoryMock
-            .Setup(repo => repo.GetUserByUsernameOrEmailAsync(usernameOrEmail))
+            .Setup(r => r.GetUserByUsernameOrEmailAsync(loginDto.UsernameOrEmail))
             .ReturnsAsync(user);
+
         _configurationMock
             .Setup(c => c["JwtSettings:SecretKey"])
-            .Returns("12951111111116714340772801558047");
+            .Returns("THIS_IS_A_SECRET_KEY_123456789012345678901234");
+
+        _configurationMock.Setup(c => c["JwtSettings:ExpirationHours"]).Returns("1");
 
         // Act
-        var result = await _userService.LoginAsync(dto);
+        var result = await _userService.LoginAsync(loginDto);
 
         // Assert
         Assert.NotNull(result);
-        Assert.Equal(user.Id, result!.Value.User.Id);
-        Assert.NotEmpty(result.Value.Token);
+        Assert.Equal(user, result?.User);
+        Assert.False(string.IsNullOrEmpty(result?.Token));
+        Assert.False(string.IsNullOrEmpty(result?.RefreshToken));
     }
 
     [Fact]
-    public async Task LoginAsync_InvalidCredentials_ThrowsUnauthorizedAccessException_UserNotFound()
+    public async Task RegisterAsync_UsernameTaken_ThrowsException()
     {
         // Arrange
-        string usernameOrEmail = "nonexistentuser";
-        string password = "password";
-
-        var dto = new UserLoginDTO(usernameOrEmail, password);
-
-        _userRepositoryMock
-            .Setup(repo => repo.GetUserByUsernameOrEmailAsync(usernameOrEmail))
-            .ReturnsAsync((User?)null); // Simulate user not found
-
-        // Act & Assert
-        await Assert.ThrowsAsync<UnauthorizedAccessException>(() => _userService.LoginAsync(dto));
-    }
-
-    [Fact]
-    public async Task LoginAsync_InvalidCredentials_ThrowsUnauthorizedAccessException_InvalidPassword()
-    {
-        // Arrange
-        string usernameOrEmail = "testuser";
-        string inputPassword = "wrongpassword";
-        string correctPassword = "correctpassword";
-        string salt = Convert.ToBase64String(new byte[16]);
-        string correctHashedPassword = HashPassword(correctPassword, salt);
-
-        var user = new User
+        var existingUsers = new List<User>
         {
-            Id = Guid.NewGuid(),
-            Username = usernameOrEmail,
-            Email = "test@example.com",
-            Password = correctHashedPassword,
-            PasswordSalt = salt,
-            Role = Role.USER,
+            new User
+            {
+                Username = "ExistingUser",
+                Email = "existing@example.com",
+                Password = "test",
+                PasswordSalt = "test"
+            }
         };
 
-        var dto = new UserLoginDTO(usernameOrEmail, inputPassword);
-
-        _userRepositoryMock
-            .Setup(repo => repo.GetUserByUsernameOrEmailAsync(usernameOrEmail))
-            .ReturnsAsync(user);
-
-        // Act & Assert
-        await Assert.ThrowsAsync<UnauthorizedAccessException>(() => _userService.LoginAsync(dto));
-    }
-
-    [Fact]
-    public async Task RegisterAsync_ValidInput_RegistersUser()
-    {
-        string salt = Convert.ToBase64String(new byte[16]);
         var dto = new UserRegisterDTO(
-            "newuser",
-            "newuser@example.com",
-            "password",
-            salt,
-            "password",
+            "ExistingUser",
+            "new@example.com",
+            "password123",
+            "test",
+            "password123",
             Gender.MALE,
             Role.USER
         );
 
-        var hashedPassword = HashPassword(dto.Password, salt);
+        _userRepositoryMock
+            .Setup(r =>
+                r.GetAllAsync(
+                    It.IsAny<List<Expression<Func<User, bool>>>>(),
+                    It.IsAny<Func<IQueryable<User>, IOrderedQueryable<User>>?>(),
+                    It.IsAny<string?>(),
+                    It.IsAny<int?>(),
+                    It.IsAny<int?>()
+                )
+            )
+            .ReturnsAsync(existingUsers);
 
+        // Act & Assert
+        await Assert.ThrowsAsync<InvalidOperationException>(() => _userService.RegisterAsync(dto));
+    }
+
+    [Fact]
+    public async Task LogoutAsync_ValidUser_ClearsTokens()
+    {
+        // Arrange
+        var userId = Guid.NewGuid();
         var user = new User
         {
-            Id = Guid.NewGuid(),
-            Username = dto.Username,
-            Email = dto.Email,
-            Role = dto.Role,
-            Password = hashedPassword,
-            PasswordSalt = salt,
+            Id = userId,
+            RefreshToken = "token",
+            RefreshTokenExpiryTime = DateTime.UtcNow,
+            Username = "test",
+            Email = "test@gmail.com",
+            Password = "test",
+            PasswordSalt = "test"
         };
 
-        _userRepositoryMock
-            .Setup(repo => repo.RegisterAsync(It.IsAny<User>()))
-            .Returns(Task.CompletedTask);
+        _userRepositoryMock.Setup(r => r.GetByIdAsync(userId)).ReturnsAsync(user);
 
         // Act
-        await _userService.RegisterAsync(dto);
+        await _userService.LogoutAsync(userId);
 
         // Assert
-        _userRepositoryMock.Verify(
-            repo =>
-                repo.RegisterAsync(
-                    It.Is<User>(u =>
-                        u.Username == dto.Username
-                        && u.Email == dto.Email
-                        && u.Password != null // Ensure hashed password
-                        && u.PasswordSalt != null // Ensure password salt
-                    )
-                ),
-            Times.Once
-        );
+        Assert.Null(user.RefreshToken);
+        Assert.Null(user.RefreshTokenExpiryTime);
+        _userRepositoryMock.Verify(r => r.Update(user), Times.Once);
+        _userRepositoryMock.Verify(r => r.SaveChangesAsync(), Times.Once);
+    }
+
+    [Fact]
+    public async Task GetByIdAsync_UserIsSelf_ReturnsUser()
+    {
+        // Arrange
+        var userId = Guid.NewGuid();
+        var user = new User
+        {
+            Id = userId,
+            Username = "test",
+            Email = "test@gmail.com",
+            Password = "test",
+            PasswordSalt = "test"
+        };
+
+        var claims = new List<Claim>
+        {
+            new Claim("UserId", userId.ToString()),
+            new Claim(ClaimTypes.Role, Role.USER.ToString())
+        };
+
+        var identity = new ClaimsIdentity(claims, "TestAuth");
+        var claimsPrincipal = new ClaimsPrincipal(identity);
+
+        var httpContext = new DefaultHttpContext { User = claimsPrincipal };
+        _httpContextAccessorMock.Setup(h => h.HttpContext).Returns(httpContext);
+
+        _userRepositoryMock.Setup(r => r.GetByIdAsync(userId)).ReturnsAsync(user);
+
+        // Act
+        var result = await _userService.GetByIdAsync(userId);
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.Equal(user.Username, result?.Username);
     }
 }

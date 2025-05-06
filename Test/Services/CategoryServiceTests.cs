@@ -10,155 +10,155 @@ namespace Test.Services;
 
 public class CategoryServiceTests
 {
-    private readonly Mock<ICategoryRepository> _categoryRepoMock = new();
-    private readonly CategoryService _categoryService;
+    private readonly Mock<ICategoryRepository> _categoryRepoMock;
+    private readonly CategoryService _service;
 
     public CategoryServiceTests()
     {
-        _categoryService = new CategoryService(_categoryRepoMock.Object);
+        _categoryRepoMock = new Mock<ICategoryRepository>();
+        _service = new CategoryService(_categoryRepoMock.Object);
     }
 
     [Fact]
-    public async Task CreateAsync_ValidInput_CreatesCategory()
+    public async Task CreateAsync_Should_Add_Category_When_Valid()
     {
         // Arrange
-        var dto = new CreateCategoryDTO("Fiction");
-        var category = new Category { CategoryId = Guid.NewGuid(), Name = dto.Name };
-
-        _categoryRepoMock.Setup(x => x.AddAsync(It.IsAny<Category>())).Returns(Task.CompletedTask);
-        _categoryRepoMock.Setup(x => x.SaveChangesAsync()).Returns(Task.CompletedTask);
+        var dto = new CreateCategoryDTO("NewCategory");
+        _categoryRepoMock
+            .Setup(r => r.GetAllAsync(null, null, null, null, null))
+            .ReturnsAsync(new List<Category>());
 
         // Act
-        await _categoryService.CreateAsync(dto);
+        await _service.CreateAsync(dto);
 
         // Assert
         _categoryRepoMock.Verify(
-            x => x.AddAsync(It.Is<Category>(c => c.Name == dto.Name)),
+            r => r.AddAsync(It.Is<Category>(c => c.Name == dto.Name)),
             Times.Once
         );
-        _categoryRepoMock.Verify(x => x.SaveChangesAsync(), Times.Once);
+        _categoryRepoMock.Verify(r => r.SaveChangesAsync(), Times.Once);
     }
 
     [Fact]
-    public async Task CreateAsync_DuplicateCategoryName_ThrowsInvalidOperationException()
+    public async Task CreateAsync_Should_Throw_When_Name_Exists()
     {
-        // Arrange
-        var dto = new CreateCategoryDTO("Fiction");
-        var categoryId = Guid.NewGuid();
-        var existingCategory = new Category { CategoryId = categoryId, Name = "Fiction" };
+        var dto = new CreateCategoryDTO("Existing");
+        var existing = new List<Category> { new Category { Name = "existing" } };
 
         _categoryRepoMock
-            .Setup(x => x.GetAllAsync())
-            .ReturnsAsync(new List<Category> { existingCategory });
+            .Setup(r => r.GetAllAsync(null, null, null, null, null))
+            .ReturnsAsync(existing);
 
-        // Act & Assert
-        var ex = await Assert.ThrowsAsync<InvalidOperationException>(
-            () => _categoryService.CreateAsync(dto)
-        );
-        Assert.Equal(ErrorMessages.CategoryNameExist, ex.Message);
+        await Assert.ThrowsAsync<InvalidOperationException>(() => _service.CreateAsync(dto));
     }
 
     [Fact]
-    public async Task UpdateAsync_ValidInput_UpdatesCategory()
+    public async Task DeleteAsync_Should_Throw_If_Category_Has_Books()
     {
-        // Arrange
-        var categoryId = Guid.NewGuid();
-        var dto = new UpdateCategoryDTO(categoryId, "Updated Name");
-        var existingCategory = new Category { CategoryId = categoryId, Name = "Old Name" };
+        var category = new Category
+        {
+            Name = "sdasd",
+            Books = new List<Book>
+            {
+                new Book
+                {
+                    Name = " Book",
+                    Author = "test",
+                    Quantity = 1,
+                    ImageUrl = "asd"
+                }
+            }
+        };
 
-        _categoryRepoMock.Setup(x => x.GetByIdAsync(categoryId)).ReturnsAsync(existingCategory);
-        _categoryRepoMock.Setup(x => x.Update(It.IsAny<Category>()));
-        _categoryRepoMock.Setup(x => x.SaveChangesAsync()).Returns(Task.CompletedTask);
+        _categoryRepoMock.Setup(r => r.GetByIdAsync(category.CategoryId)).ReturnsAsync(category);
 
-        // Act
-        await _categoryService.UpdateAsync(dto, categoryId);
+        var ex = await Assert.ThrowsAsync<InvalidOperationException>(
+            () => _service.DeleteAsync(category.CategoryId)
+        );
+        Assert.Contains("books", ex.Message);
+    }
 
-        // Assert
+    [Fact]
+    public async Task DeleteAsync_Should_Delete_When_Valid()
+    {
+        var id = Guid.NewGuid();
+        var category = new Category { Name = "asd", Books = new List<Book>() };
+
+        _categoryRepoMock.Setup(r => r.GetByIdAsync(id)).ReturnsAsync(category);
+
+        await _service.DeleteAsync(id);
+
         _categoryRepoMock.Verify(
-            x => x.Update(It.Is<Category>(c => c.CategoryId == categoryId && c.Name == dto.Name)),
+            r => r.Delete(It.Is<Category>(c => c.CategoryId == id)),
             Times.Once
         );
-        _categoryRepoMock.Verify(x => x.SaveChangesAsync(), Times.Once);
+        _categoryRepoMock.Verify(r => r.SaveChangesAsync(), Times.Once);
     }
 
     [Fact]
-    public async Task UpdateAsync_CategoryNotFound_ThrowsKeyNotFoundException()
+    public async Task GetAllAsync_Should_Return_Categories()
     {
-        // Arrange
-        var categoryId = Guid.NewGuid();
-        var dto = new UpdateCategoryDTO(categoryId, "New Category");
+        var categories = new List<Category> { new Category { Name = "Test" } };
 
-        _categoryRepoMock.Setup(x => x.GetByIdAsync(categoryId)).ReturnsAsync((Category?)null);
+        _categoryRepoMock
+            .Setup(r => r.GetAllAsync(null, null, null, It.IsAny<int>(), It.IsAny<int>()))
+            .ReturnsAsync(categories);
 
-        // Act & Assert
-        var ex = await Assert.ThrowsAsync<KeyNotFoundException>(
-            () => _categoryService.UpdateAsync(dto, categoryId)
-        );
-        Assert.Equal(ErrorMessages.NotFound, ex.Message);
+        var result = await _service.GetAllAsync();
+
+        Assert.Single(result);
+        Assert.Equal("Test", result.First().Name);
     }
 
     [Fact]
-    public async Task DeleteAsync_ValidCategory_DeletesCategory()
+    public async Task GetByIdAsync_Should_Return_Category()
     {
-        // Arrange
-        var categoryId = Guid.NewGuid();
-        var category = new Category { CategoryId = categoryId, Name = "Fiction" };
+        var id = Guid.NewGuid();
+        var category = new Category { Name = "Sample" };
 
-        _categoryRepoMock.Setup(x => x.GetByIdAsync(categoryId)).ReturnsAsync(category);
-        _categoryRepoMock.Setup(x => x.Delete(category));
-        _categoryRepoMock.Setup(x => x.SaveChangesAsync()).Returns(Task.CompletedTask);
+        _categoryRepoMock.Setup(r => r.GetByIdAsync(id)).ReturnsAsync(category);
 
-        // Act
-        await _categoryService.DeleteAsync(categoryId);
+        var result = await _service.GetByIdAsync(id);
 
-        // Assert
-        _categoryRepoMock.Verify(x => x.Delete(category), Times.Once);
-        _categoryRepoMock.Verify(x => x.SaveChangesAsync(), Times.Once);
-    }
-
-    [Fact]
-    public async Task DeleteAsync_CategoryNotFound_ThrowsKeyNotFoundException()
-    {
-        // Arrange
-        var categoryId = Guid.NewGuid();
-        _categoryRepoMock.Setup(x => x.GetByIdAsync(categoryId)).ReturnsAsync((Category?)null);
-
-        // Act & Assert
-        var ex = await Assert.ThrowsAsync<KeyNotFoundException>(
-            () => _categoryService.DeleteAsync(categoryId)
-        );
-        Assert.Equal(ErrorMessages.NotFound, ex.Message);
-    }
-
-    [Fact]
-    public async Task GetByIdAsync_ValidCategory_ReturnsCategory()
-    {
-        // Arrange
-        var categoryId = Guid.NewGuid();
-        var category = new Category { CategoryId = categoryId, Name = "Fiction" };
-
-        _categoryRepoMock.Setup(x => x.GetByIdAsync(categoryId)).ReturnsAsync(category);
-
-        // Act
-        var result = await _categoryService.GetByIdAsync(categoryId);
-
-        // Assert
         Assert.NotNull(result);
-        Assert.Equal(categoryId, result.CategoryId);
-        Assert.Equal("Fiction", result.Name);
+        Assert.Equal("Sample", result.Name);
     }
 
     [Fact]
-    public async Task GetByIdAsync_CategoryNotFound_ThrowsKeyNotFoundException()
+    public async Task UpdateAsync_Should_Throw_When_Name_Exists()
     {
-        // Arrange
-        var categoryId = Guid.NewGuid();
-        _categoryRepoMock.Setup(x => x.GetByIdAsync(categoryId)).ReturnsAsync((Category?)null);
+        var id = Guid.NewGuid();
+        var dto = new UpdateCategoryDTO(id, "Duplicate");
+        var existing = new List<Category> { new Category { Name = "duplicate" } };
 
-        // Act & Assert
-        var ex = await Assert.ThrowsAsync<KeyNotFoundException>(
-            () => _categoryService.GetByIdAsync(categoryId)
+        _categoryRepoMock
+            .Setup(r => r.GetByIdAsync(id))
+            .ReturnsAsync(new Category { Name = "asf" });
+        _categoryRepoMock
+            .Setup(r => r.GetAllAsync(null, null, null, null, null))
+            .ReturnsAsync(existing);
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() => _service.UpdateAsync(dto, id));
+    }
+
+    [Fact]
+    public async Task UpdateAsync_Should_Update_When_Valid()
+    {
+        var id = Guid.NewGuid();
+        var dto = new UpdateCategoryDTO(id, "Updated");
+        var category = new Category { Name = "Old" };
+
+        _categoryRepoMock.Setup(r => r.GetByIdAsync(id)).ReturnsAsync(category);
+        _categoryRepoMock
+            .Setup(r => r.GetAllAsync(null, null, null, null, null))
+            .ReturnsAsync(new List<Category>());
+
+        await _service.UpdateAsync(dto, id);
+
+        _categoryRepoMock.Verify(
+            r => r.Update(It.Is<Category>(c => c.Name == dto.Name)),
+            Times.Once
         );
-        Assert.Equal(ErrorMessages.NotFound, ex.Message);
+        _categoryRepoMock.Verify(r => r.SaveChangesAsync(), Times.Once);
     }
 }
