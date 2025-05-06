@@ -34,8 +34,9 @@ const AdminBookBorrowingRequestPage = () => {
         }
       );
 
-      setRequests(response.data.items || response.data); // Handle both paginated and non-paginated responses
-      setTotalPages(response.data.totalPages || 1); // Default to 1 if not paginated
+      setRequests(response.data.items || response.data);
+      console.log(response.data.items || response.data);
+      setTotalPages(response.data.totalPages || 1);
     } catch (err) {
       if (err.response?.status === 401) {
         navigate("/login");
@@ -246,7 +247,7 @@ const AdminBookBorrowingRequestPage = () => {
                       <td className="px-6 py-4">
                         <ul className="list-disc pl-4">
                           {request.details?.map((detail, index) => (
-                            <li key={index}>{detail.bookTitle}</li>
+                            <ul key={index}>{detail.bookName}</ul>
                           ))}
                         </ul>
                       </td>

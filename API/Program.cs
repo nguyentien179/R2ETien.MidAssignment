@@ -41,27 +41,37 @@ builder.Services.AddRateLimiter(options =>
 {
     options.AddPolicy(
         "PerUserMonthlyLimit",
-        context =>
+        httpContext =>
         {
             var userId =
-                context.User.FindFirstValue("UserId") ?? context.Request.Query["UserId"].ToString();
+                httpContext.User.FindFirstValue("UserId")
+                ?? httpContext.Request.Query["UserId"].ToString();
+
+            if (string.IsNullOrEmpty(userId))
+            {
+                userId = "anonymous";
+            }
 
             return RateLimitPartition.GetFixedWindowLimiter(
                 partitionKey: userId,
                 factory: _ => new FixedWindowRateLimiterOptions
                 {
-                    PermitLimit = 3, // 3 requests
+                    PermitLimit = 3,
                     Window = TimeSpan.FromDays(30),
                     QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                    QueueLimit = 0, // Optional: no queuing
+                    AutoReplenishment = true // Ensure permits refill every window
                 }
             );
         }
     );
 
-    // Add custom response when limit is exceeded
+    options.RejectionStatusCode = 429;
+
     options.OnRejected = async (context, token) =>
     {
         context.HttpContext.Response.StatusCode = 429;
+        context.HttpContext.Response.ContentType = "text/plain";
         await context.HttpContext.Response.WriteAsync(
             "You've exceeded the maximum of 3 borrowing requests per month. Please try again later.",
             token

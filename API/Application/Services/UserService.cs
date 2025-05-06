@@ -260,4 +260,12 @@ public class UserService : IUserService
         _userRepository.Delete(user);
         await _userRepository.SaveChangesAsync();
     }
+
+    public async Task<UserDTO?> GetByRefreshTokenAsync(string refreshToken)
+    {
+        var user =
+            await _userRepository.GetByRefreshTokenAsync(refreshToken)
+            ?? throw new UnauthorizedAccessException(ErrorMessages.InvalidReFreshToken);
+        return user.ToDTO();
+    }
 }

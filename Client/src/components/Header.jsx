@@ -2,6 +2,7 @@ import { useState, useEffect, useContext, createContext } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
 import CartDropdown from "./CartDropdown";
+import Swal from "sweetalert2";
 
 export const AuthContext = createContext();
 export const CartContext = createContext();
@@ -12,51 +13,107 @@ export const AuthProvider = ({ children }) => {
   const navigate = useNavigate();
   const API_URL = import.meta.env.VITE_API_URL;
 
-  // Verify auth status on initial load
-  useEffect(() => {
-    const verifyAuth = async () => {
-      try {
-        const response = await axios.get(`${API_URL}/users/current-user`, {
-          withCredentials: true,
-        });
-        setUser(response.data);
-      } catch (error) {
-        setUser(null);
-      } finally {
-        setLoading(false);
-      }
-    };
-    verifyAuth();
-  }, [API_URL]);
+  // Configure axios instance for the provider
+  const authAxios = axios.create({
+    baseURL: API_URL,
+    withCredentials: true,
+  });
 
-  const updateUser = (userData) => {
-    setUser(userData);
+  let isRefreshing = false;
+  let failedRequestsQueue = [];
+
+  // Add response interceptor
+  authAxios.interceptors.response.use(
+    (response) => response,
+    async (error) => {
+      const originalRequest = error.config;
+
+      if (
+        error.response?.status === 401 &&
+        !originalRequest.url.includes("/auth/") &&
+        !originalRequest._retry
+      ) {
+        if (isRefreshing) {
+          return new Promise((resolve, reject) => {
+            failedRequestsQueue.push({ resolve, reject });
+          })
+            .then(() => authAxios(originalRequest))
+            .catch((err) => Promise.reject(err));
+        }
+
+        originalRequest._retry = true;
+        isRefreshing = true;
+
+        try {
+          await axios.post(
+            `${API_URL}/users/refresh-token`,
+            {},
+            {
+              withCredentials: true,
+            }
+          );
+          return authAxios(originalRequest);
+        } catch (refreshError) {
+          handleLogout();
+          return Promise.reject(refreshError);
+        } finally {
+          isRefreshing = false;
+        }
+      }
+      return Promise.reject(error);
+    }
+  );
+
+  const verifyAuth = async () => {
+    try {
+      const response = await authAxios.get("/users/current-user");
+      setUser(response.data);
+    } catch (error) {
+      setUser(null);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const logout = async () => {
+  const handleLogout = async () => {
     try {
-      await axios.post(
-        `${API_URL}/users/logout`,
-        {},
-        {
-          withCredentials: true,
-        }
-      );
+      await authAxios.post("/users/logout");
     } finally {
       setUser(null);
       navigate("/login");
     }
   };
 
+  const updateUser = (userData) => {
+    setUser(userData);
+  };
+
+  // Verify auth status on initial load
+  useEffect(() => {
+    verifyAuth();
+  }, []);
+
   return (
-    <AuthContext.Provider value={{ user, loading, updateUser, logout }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        loading,
+        updateUser,
+        logout: handleLogout,
+        authAxios,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );
 };
 
 export const useAuth = () => {
-  return useContext(AuthContext);
+  const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error("useAuth must be used within an AuthProvider");
+  }
+  return context;
 };
 
 // Cart provider component

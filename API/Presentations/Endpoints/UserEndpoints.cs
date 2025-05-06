@@ -28,6 +28,61 @@ public static class UserEndpoints
             .AddEndpointFilter<ValidationFilter<UserRegisterDTO>>();
         userGroup.MapPost("/login", LoginAsync).AddEndpointFilter<ValidationFilter<UserLoginDTO>>();
         userGroup.MapPost("/logout", LogoutAsync).RequireAuthorization();
+        userGroup.MapPost("/refresh-token", RefreshTokenAsync);
+    }
+
+    private static async Task<IResult> RefreshTokenAsync(
+        IUserService service,
+        HttpContext httpContext
+    )
+    {
+        var refreshToken = httpContext.Request.Cookies["refreshToken"];
+        if (string.IsNullOrEmpty(refreshToken))
+        {
+            return Results.Unauthorized();
+        }
+
+        try
+        {
+            // Validate the refresh token against database
+            var userId = await service.GetByRefreshTokenAsync(refreshToken);
+            if (userId == null)
+            {
+                return Results.Unauthorized();
+            }
+
+            var tokenResponse = await service.RefreshTokenAsync(refreshToken);
+            httpContext.Response.Cookies.Append(
+                "AccessToken",
+                tokenResponse!.AccessToken,
+                new CookieOptions
+                {
+                    HttpOnly = true,
+                    Secure = true,
+                    SameSite = SameSiteMode.Strict,
+                    Expires = DateTime.UtcNow.AddMinutes(60),
+                }
+            );
+            httpContext.Response.Cookies.Append(
+                "RefreshToken",
+                tokenResponse.RefreshToken,
+                new CookieOptions
+                {
+                    HttpOnly = true,
+                    Secure = true,
+                    SameSite = SameSiteMode.Strict,
+                    Expires = DateTime.UtcNow.AddDays(7)
+                }
+            );
+
+            return Results.Ok(new { Message = "Tokens refreshed successfully" });
+        }
+        catch (Exception)
+        {
+            httpContext.Response.Cookies.Delete("AccessToken");
+            httpContext.Response.Cookies.Delete("RefreshToken");
+            return Results.Unauthorized();
+        }
     }
 
     private static async Task<IResult> DeleteAsync([FromServices] IUserService service, Guid id)
@@ -55,13 +110,18 @@ public static class UserEndpoints
         );
     }
 
-    private static async Task<IResult> LogoutAsync([FromServices] IUserService service)
+    private static async Task<IResult> LogoutAsync(
+        [FromServices] IUserService service,
+        HttpContext httpContext
+    )
     {
         var userId = service.GetCurrentUserId();
         if (userId == null)
         {
             return Results.Unauthorized();
         }
+        httpContext.Response.Cookies.Delete("AccessToken");
+        httpContext.Response.Cookies.Delete("RefreshToken");
         await service.LogoutAsync(userId.Value);
         return Results.Ok("Logout successful.");
     }
@@ -132,6 +192,17 @@ public static class UserEndpoints
                 Secure = true,
                 SameSite = SameSiteMode.Strict,
                 Expires = DateTime.UtcNow.AddMinutes(60),
+            }
+        );
+        httpContext.Response.Cookies.Append(
+            "refreshToken",
+            refreshToken,
+            new CookieOptions
+            {
+                HttpOnly = true,
+                Secure = true,
+                SameSite = SameSiteMode.Strict,
+                Expires = DateTime.UtcNow.AddDays(7)
             }
         );
 

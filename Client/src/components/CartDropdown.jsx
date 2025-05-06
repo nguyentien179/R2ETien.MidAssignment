@@ -2,6 +2,7 @@ import { useState, useContext } from "react";
 import { useNavigate } from "react-router-dom";
 import { CartContext } from "./Header";
 import axios from "axios";
+import Swal from "sweetalert2";
 
 const CartDropdown = () => {
   const navigate = useNavigate();
@@ -13,15 +14,23 @@ const CartDropdown = () => {
 
   const totalItems = cartItems.reduce((sum, item) => sum + item.quantity, 0);
 
+  const showErrorAlert = (message) => {
+    Swal.fire({
+      icon: "error",
+      title: "Error",
+      text: message,
+      confirmButtonColor: "#3085d6",
+    });
+  };
+
   const handleBorrowRequest = async () => {
     if (totalItems > 5) {
-      setError("You cannot borrow more than 5 books at a time");
+      showErrorAlert("You cannot borrow more than 5 books at a time");
       return;
     }
 
     setIsLoading(true);
     setError(null);
-    clearCart();
     try {
       const requestDetails = cartItems.map((item) => ({
         BookId: item.bookId,
@@ -40,35 +49,48 @@ const CartDropdown = () => {
           },
         }
       );
+      Swal.fire({
+        icon: "success",
+        title: "Success!",
+        text: "Your borrow request has been submitted",
+        confirmButtonColor: "#3085d6",
+      });
+      clearCart();
     } catch (error) {
       console.error("Borrow request failed:", error);
 
+      let errorMessage = "An unexpected error occurred";
+
       if (error.response) {
-        // Handle specific error cases from backend
         const backendError = error.response.data;
 
         if (error.response.status === 400) {
-          setError(
-            backendError.title || "Validation error - please check your request"
-          );
+          errorMessage =
+            backendError.title ||
+            "Validation error - please check your request";
         } else if (error.response.status === 404) {
-          setError("One or more books were not found");
+          errorMessage = "One or more books were not found";
         } else if (error.response.status === 409) {
-          setError(backendError || "Inventory conflict - please try again");
+          errorMessage =
+            backendError || "Inventory conflict - please try again";
+        } else if (error.response.status === 429) {
+          errorMessage =
+            backendError?.Error ||
+            "You've reached your monthly borrow limit (5 requests). Please try again next month.";
         } else if (
           error.response.status === 401 ||
           error.response.status === 403
         ) {
-          setError("Please login to complete your request");
+          errorMessage = "Please login to complete your request";
           navigate("/login");
         } else {
-          setError(backendError || "Failed to process your request");
+          errorMessage = backendError || "Failed to process your request";
         }
       } else if (error.request) {
-        setError("Network error - please check your connection");
-      } else {
-        setError("An unexpected error occurred");
+        errorMessage = "Network error - please check your connection";
       }
+
+      showErrorAlert(errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -132,11 +154,6 @@ const CartDropdown = () => {
               </div>
 
               <div className="p-4 border-t">
-                {error && (
-                  <div className="mb-3 p-2 bg-red-50 text-red-600 text-sm rounded-md">
-                    ⚠️ {error}
-                  </div>
-                )}
                 <button
                   onClick={handleBorrowRequest}
                   disabled={isLoading}

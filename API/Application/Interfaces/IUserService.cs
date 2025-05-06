@@ -16,6 +16,7 @@ public interface IUserService
         int? pageSize = null
     );
     Task<UserDTO?> GetByIdAsync(Guid id);
+    Task<UserDTO?> GetByRefreshTokenAsync(string refreshToken);
     Task<(User User, string Token, string RefreshToken)?> LoginAsync(UserLoginDTO dto);
     Task RegisterAsync(UserRegisterDTO dto);
     Task LogoutAsync(Guid userId);

@@ -2,20 +2,21 @@ import React, { useEffect, useState } from "react";
 import axios from "axios";
 import Swal from "sweetalert2";
 import { Link } from "react-router-dom";
+import { useAuth } from "../../../components/Header";
 
 const AdminBooksPage = () => {
+  const { authAxios } = useAuth();
   const [books, setBooks] = useState([]);
   const [nameFilter, setNameFilter] = useState("");
   const [authorFilter, setAuthorFilter] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("");
   const [sortOrder, setSortOrder] = useState("");
   const [categories, setCategories] = useState([]);
-  const API_URL = import.meta.env.VITE_API_URL;
 
   useEffect(() => {
     const fetchCategories = async () => {
       try {
-        const response = await axios.get(`${API_URL}/category`);
+        const response = await authAxios.get(`/category`);
         setCategories(response.data);
         console.log(response.data);
       } catch (error) {
@@ -24,7 +25,7 @@ const AdminBooksPage = () => {
     };
 
     fetchCategories();
-  }, [API_URL]);
+  }, [authAxios]);
 
   useEffect(() => {
     const fetchBooks = async () => {
@@ -48,12 +49,9 @@ const AdminBooksPage = () => {
           params.append("sortOrder", sortOrder);
         }
 
-        const response = await axios.get(
-          `${API_URL}/books?${params.toString()}`,
-          {
-            withCredentials: true,
-          }
-        );
+        const response = await authAxios.get(`/books?${params.toString()}`, {
+          withCredentials: true,
+        });
         setBooks(response.data);
         console.log(response.data);
       } catch (error) {
@@ -63,7 +61,7 @@ const AdminBooksPage = () => {
 
     fetchBooks();
   }, [
-    API_URL,
+    authAxios,
     nameFilter,
     authorFilter,
     categoryFilter,

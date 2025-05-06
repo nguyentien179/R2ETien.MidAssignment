@@ -76,16 +76,14 @@ public class BookBorrowingRequestService : IBookBorrowingRequestService
 
     public async Task CreateAsync(CreateBookBorrowingRequestDTO dto)
     {
+        if (dto.Details.Count > 5)
+        {
+            throw new InvalidOperationException("You can not borrow more than 5 books at a time");
+        }
         await using var transaction = await _dbContext.Database.BeginTransactionAsync();
 
         try
         {
-            if (dto.Details.Count > 5)
-            {
-                throw new InvalidOperationException(
-                    "You can not borrow more than 5 books at a time"
-                );
-            }
             await ValidateBooksForRequest(dto.Details);
 
             var currentUserId = _userService.GetCurrentUserId();
@@ -208,53 +206,84 @@ public class BookBorrowingRequestService : IBookBorrowingRequestService
 
     public async Task UpdateRequestStatusAsync(Guid requestId, RequestStatus requestStatus)
     {
-        var request =
-            await _repository.GetByIdAsync(requestId)
-            ?? throw new KeyNotFoundException(ErrorMessages.RequestNotFound);
-
-        var approverId = _userService.GetCurrentUserId();
-        if (!approverId.HasValue)
-        {
-            throw new UnauthorizedAccessException(ErrorMessages.Forbidden);
-        }
-
-        if (request.RequestStatus != RequestStatus.WAITING)
-        {
-            throw new InvalidOperationException(ErrorMessages.RequestProcessed);
-        }
-
-        request.RequestStatus = requestStatus;
-        if (requestStatus == RequestStatus.APPROVED)
-        {
-            request.DueDate = DateOnly.FromDateTime(DateTime.Today.AddDays(14));
-        }
-        if (requestStatus == RequestStatus.REJECTED)
-        {
-            foreach (var detail in request.BorrowingRequestDetails)
-            {
-                var book = await _bookRepository.GetByIdAsync(detail.BookId);
-                if (book == null)
-                    throw new KeyNotFoundException($"Book with ID {detail.BookId} not found.");
-
-                book.Quantity += 1;
-            }
-        }
-
-        request.ApproverId = approverId;
-        _repository.Update(request);
+        await using var transaction = await _dbContext.Database.BeginTransactionAsync();
 
         try
         {
+            var request =
+                await _repository.GetByIdAsync(requestId)
+                ?? throw new KeyNotFoundException(ErrorMessages.RequestNotFound);
+
+            var approverId = _userService.GetCurrentUserId();
+            if (!approverId.HasValue)
+            {
+                throw new UnauthorizedAccessException(ErrorMessages.Forbidden);
+            }
+
+            if (request.RequestStatus != RequestStatus.WAITING)
+            {
+                throw new InvalidOperationException(ErrorMessages.RequestProcessed);
+            }
+
+            if (!Enum.IsDefined(typeof(RequestStatus), requestStatus))
+            {
+                throw new ArgumentException("Invalid request status");
+            }
+
+            request.RequestStatus = requestStatus;
+            request.ApproverId = approverId;
+
+            switch (requestStatus)
+            {
+                case RequestStatus.APPROVED:
+                    request.DueDate = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(14));
+                    break;
+
+                case RequestStatus.REJECTED:
+                    await ReturnBooksToInventory(request.BorrowingRequestDetails);
+                    break;
+
+                case RequestStatus.WAITING:
+                    break;
+
+                default:
+                    throw new InvalidOperationException($"Unhandled status: {requestStatus}");
+            }
+
             await _repository.SaveChangesAsync();
-            await _bookRepository.SaveChangesAsync();
+            await transaction.CommitAsync();
         }
         catch (DbUpdateConcurrencyException ex)
         {
+            await transaction.RollbackAsync();
             throw new InvalidOperationException(
                 "The request was modified by another user. Please reload and try again.",
                 ex
             );
         }
+        catch (Exception ex)
+        {
+            await transaction.RollbackAsync();
+            throw new Exception($"Failed to update request status: {ex.Message}");
+        }
+    }
+
+    private async Task ReturnBooksToInventory(IEnumerable<BookBorrowingRequestDetails> details)
+    {
+        foreach (var detail in details)
+        {
+            if (detail.Book == null)
+            {
+                throw new InvalidOperationException(
+                    $"Book reference missing for detail {detail.RequestDetailsId}"
+                );
+            }
+
+            detail.Book.Quantity += 1;
+            _bookRepository.Update(detail.Book);
+        }
+
+        await _bookRepository.SaveChangesAsync();
     }
 
     public async Task ExtendDueDate(Guid requestId)

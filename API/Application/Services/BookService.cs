@@ -113,7 +113,7 @@ public class BookService : IBookService
 
         book.Name = dto.Name;
         book.Author = dto.Author;
-        book.Category = null;
+        book.Category = null!;
         book.CategoryId = dto.CategoryId;
         book.Quantity = dto.Quantity;
 
