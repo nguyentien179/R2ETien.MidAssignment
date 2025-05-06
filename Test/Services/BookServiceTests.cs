@@ -160,12 +160,13 @@ public class BookServiceTests
     public async Task UpdateAsync_Should_Update_Fields()
     {
         var bookId = Guid.NewGuid();
-        var dto = new UpdateBookInputDTO(
+        var dto = new UpdateBookDTO(
             "Updated Book",
             "Updated Author",
             Guid.NewGuid(),
             5,
-            CreateMockFormFile("image.jpg", "image/jpeg", new byte[] { 1, 2, 3 })
+            CreateMockFormFile("image.jpg", "image/jpeg", new byte[] { 1, 2, 3 }),
+            "new_image_url"
         );
 
         var existingBook = new Book

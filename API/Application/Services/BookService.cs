@@ -84,29 +84,40 @@ public class BookService : IBookService
         return book.ToDTO();
     }
 
-    public async Task UpdateAsync(UpdateBookInputDTO dto, Guid id)
+    public async Task UpdateAsync(UpdateBookDTO dto, Guid id)
     {
+        Console.WriteLine($"Incoming CategoryId: {dto.CategoryId}");
         var book =
             await _bookRepository.GetByIdAsync(id)
             ?? throw new KeyNotFoundException(ErrorMessages.BookNotFound);
 
         var books = await _bookRepository.GetAllAsync();
-        if (books.Any(b => b.Name.Equals(dto.Name, StringComparison.CurrentCultureIgnoreCase)))
+        if (
+            books.Any(b =>
+                b.BookId != id && b.Name.Equals(dto.Name, StringComparison.CurrentCultureIgnoreCase)
+            )
+        )
         {
             throw new InvalidOperationException(ErrorMessages.BookNameTaken);
         }
+
         var category =
             await _categoryRepository.GetByIdAsync(dto.CategoryId)
             ?? throw new KeyNotFoundException(ErrorMessages.CategoryNotFound);
+
         if (dto.Image != null)
         {
             var imageUrl = await _imageUploader.UploadImageAsync(dto.Image);
             book.ImageUrl = imageUrl!;
         }
+
         book.Name = dto.Name;
         book.Author = dto.Author;
+        book.Category = null;
         book.CategoryId = dto.CategoryId;
         book.Quantity = dto.Quantity;
+
+        _bookRepository.Update(book);
         await _bookRepository.SaveChangesAsync();
     }
 }

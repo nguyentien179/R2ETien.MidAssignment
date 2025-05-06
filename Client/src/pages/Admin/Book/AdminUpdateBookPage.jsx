@@ -11,13 +11,19 @@ const AdminUpdateBookPage = () => {
 
   const API_URL = import.meta.env.VITE_API_URL;
   const [formData, setFormData] = useState({
-    title: "",
+    name: "",
     author: "",
     quantity: 0,
-    category: "",
+    categoryId: "",
     image: null,
     existingImage: "",
   });
+
+  const fetchExistingImageBlob = async (url) => {
+    const response = await fetch(url);
+    const blob = await response.blob();
+    return new File([blob], "existing.jpg", { type: blob.type });
+  };
 
   useEffect(() => {
     const fetchData = async () => {
@@ -32,10 +38,10 @@ const AdminUpdateBookPage = () => {
         });
 
         setFormData({
-          title: bookResponse.data.name,
+          name: bookResponse.data.name,
           author: bookResponse.data.author,
           quantity: bookResponse.data.quantity,
-          category: bookResponse.data.categoryId,
+          categoryId: bookResponse.data.categoryId,
           existingImage: bookResponse.data.imageUrl,
         });
 
@@ -73,17 +79,19 @@ const AdminUpdateBookPage = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
-
+    let imageToSend = formData.image;
     try {
       const formDataToSend = new FormData();
-      formDataToSend.append("Name", formData.title);
+      formDataToSend.append("Name", formData.name);
       formDataToSend.append("Author", formData.author);
       formDataToSend.append("Quantity", formData.quantity);
-      formDataToSend.append("CategoryId", formData.category);
-      if (formData.image) {
-        formDataToSend.append("Image", formData.image);
-      } else {
-        formDataToSend.append("Image", new Blob([]), "empty.jpg");
+      formDataToSend.append("categoryId", formData.categoryId);
+      if (!imageToSend && formData.existingImage) {
+        imageToSend = await fetchExistingImageBlob(formData.existingImage);
+      }
+
+      if (imageToSend) {
+        formDataToSend.append("Image", imageToSend);
       }
 
       await axios.put(`${API_URL}/books/${id}`, formDataToSend, {
@@ -118,8 +126,8 @@ const AdminUpdateBookPage = () => {
           <label className="block text-sm font-medium mb-1">Title</label>
           <input
             type="text"
-            name="title"
-            value={formData.title}
+            name="name"
+            value={formData.name}
             onChange={handleInputChange}
             className="w-full p-2 border rounded"
             required
@@ -154,8 +162,8 @@ const AdminUpdateBookPage = () => {
         <div>
           <label className="block text-sm font-medium mb-1">Category</label>
           <select
-            name="category"
-            value={formData.category}
+            name="categoryId"
+            value={formData.categoryId}
             onChange={handleInputChange}
             className="w-full p-2 border rounded"
             required

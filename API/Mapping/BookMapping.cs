@@ -19,18 +19,6 @@ public static class BookMapping
         };
     }
 
-    public static Book ToEntity(this UpdateBookDTO dto)
-    {
-        return new Book
-        {
-            Name = dto.Name,
-            Author = dto.Author,
-            CategoryId = dto.CategoryId,
-            Quantity = dto.Quantity,
-            ImageUrl = dto.ImageUrl,
-        };
-    }
-
     public static BookDTO ToDTO(this Book book)
     {
         return new BookDTO(

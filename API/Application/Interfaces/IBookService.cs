@@ -16,6 +16,6 @@ public interface IBookService
     );
     Task<BookDTO?> GetByIdAsync(Guid id);
     Task CreateAsync(CreateBookInputDTO dto);
-    Task UpdateAsync(UpdateBookInputDTO dto, Guid id);
+    Task UpdateAsync(UpdateBookDTO dto, Guid id);
     Task DeleteAsync(Guid id);
 }

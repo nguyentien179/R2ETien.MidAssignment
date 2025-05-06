@@ -5,7 +5,7 @@ import axios from "axios";
 
 const CartDropdown = () => {
   const navigate = useNavigate();
-  const { cartItems, removeFromCart } = useContext(CartContext);
+  const { cartItems, removeFromCart, clearCart } = useContext(CartContext);
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -21,7 +21,7 @@ const CartDropdown = () => {
 
     setIsLoading(true);
     setError(null);
-
+    clearCart();
     try {
       const requestDetails = cartItems.map((item) => ({
         BookId: item.bookId,
@@ -40,8 +40,6 @@ const CartDropdown = () => {
           },
         }
       );
-
-      navigate("/");
     } catch (error) {
       console.error("Borrow request failed:", error);
 

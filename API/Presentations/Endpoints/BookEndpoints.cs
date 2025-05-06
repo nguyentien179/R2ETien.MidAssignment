@@ -96,7 +96,7 @@ public static class BookEndpoints
     }
 
     private static async Task<IResult> UpdateAsync(
-        [FromForm] UpdateBookInputDTO dto,
+        [FromForm] UpdateBookDTO dto,
         [FromServices] IBookService bookService,
         Guid id
     )

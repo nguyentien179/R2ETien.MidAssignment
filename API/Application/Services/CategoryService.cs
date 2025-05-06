@@ -77,7 +77,12 @@ public class CategoryService : ICategoryService
             ?? throw new KeyNotFoundException(ErrorMessages.NotFound);
         var existingCategory = await _categoryRepository.GetAllAsync();
 
-        if (existingCategory.Any(c => c.Name.ToLower() == dto.Name.ToLower()))
+        if (
+            existingCategory.Any(c =>
+                c.CategoryId != id
+                && c.Name.Equals(dto.Name, StringComparison.CurrentCultureIgnoreCase)
+            )
+        )
         {
             throw new InvalidOperationException(ErrorMessages.CategoryNameExist);
         }

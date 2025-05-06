@@ -5,6 +5,5 @@ public record class UpdateBookDTO(
     string Author,
     Guid CategoryId,
     int Quantity,
-    IFormFile? Image,
-    string? ImageUrl
+    IFormFile? Image
 );

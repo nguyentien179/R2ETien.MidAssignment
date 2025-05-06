@@ -69,16 +69,12 @@ const AdminUpdateCategoryPage = () => {
         Name: formData.name,
       };
 
-      const response = await axios.put(
-        `${API_URL}/categories/${id}`,
-        updateDto,
-        {
-          withCredentials: true,
-          headers: {
-            "Content-Type": "application/json",
-          },
-        }
-      );
+      const response = await axios.put(`${API_URL}/category/${id}`, updateDto, {
+        withCredentials: true,
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
 
       if (response.data.success === false) {
         throw new Error(response.data.message || "Failed to update category");

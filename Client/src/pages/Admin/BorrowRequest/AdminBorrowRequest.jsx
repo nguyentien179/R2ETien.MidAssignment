@@ -6,6 +6,7 @@ const AdminBookBorrowingRequestPage = () => {
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [totalPages, setTotalPages] = useState(1);
   const [filters, setFilters] = useState({
     statusFilter: "",
     sortOrder: "",
@@ -33,7 +34,8 @@ const AdminBookBorrowingRequestPage = () => {
         }
       );
 
-      setRequests(response.data);
+      setRequests(response.data.items || response.data); // Handle both paginated and non-paginated responses
+      setTotalPages(response.data.totalPages || 1); // Default to 1 if not paginated
     } catch (err) {
       if (err.response?.status === 401) {
         navigate("/login");
@@ -75,11 +77,19 @@ const AdminBookBorrowingRequestPage = () => {
         )
       );
     } catch (err) {
-      alert(err.response?.data?.message || "Failed to update status");
+      setError(err.response?.data?.message || "Failed to update status");
     }
   };
 
+  const handlePageChange = (newPage) => {
+    setFilters((prev) => ({
+      ...prev,
+      pageNumber: newPage,
+    }));
+  };
+
   const formatDate = (dateString) => {
+    if (!dateString) return "N/A";
     const date = new Date(dateString);
     return date.toLocaleDateString("en-US", {
       year: "numeric",
@@ -120,6 +130,7 @@ const AdminBookBorrowingRequestPage = () => {
                 setFilters((prev) => ({
                   ...prev,
                   statusFilter: e.target.value,
+                  pageNumber: 1, // Reset to first page when filter changes
                 }))
               }
               className="w-full p-2 border rounded"
@@ -136,7 +147,11 @@ const AdminBookBorrowingRequestPage = () => {
               name="sortOrder"
               value={filters.sortOrder}
               onChange={(e) =>
-                setFilters((prev) => ({ ...prev, sortOrder: e.target.value }))
+                setFilters((prev) => ({
+                  ...prev,
+                  sortOrder: e.target.value,
+                  pageNumber: 1, // Reset to first page when sort changes
+                }))
               }
               className="w-full p-2 border rounded"
             >
@@ -145,6 +160,28 @@ const AdminBookBorrowingRequestPage = () => {
               <option value="desc">Request Date (Newest First)</option>
               <option value="due_asc">Due Date (Soonest First)</option>
               <option value="due_desc">Due Date (Latest First)</option>
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium mb-1">
+              Items Per Page
+            </label>
+            <select
+              name="pageSize"
+              value={filters.pageSize}
+              onChange={(e) =>
+                setFilters((prev) => ({
+                  ...prev,
+                  pageSize: Number(e.target.value),
+                  pageNumber: 1, // Reset to first page when page size changes
+                }))
+              }
+              className="w-full p-2 border rounded"
+            >
+              <option value="5">5</option>
+              <option value="10">10</option>
+              <option value="20">20</option>
+              <option value="50">50</option>
             </select>
           </div>
         </div>
@@ -160,123 +197,167 @@ const AdminBookBorrowingRequestPage = () => {
         </div>
       ) : (
         <div className="bg-white rounded-lg shadow overflow-hidden">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                  Requestor
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                  Approver
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                  Request Date
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                  Due Date
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                  Status
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                  Books
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {requests.map((request) => (
-                <tr key={request.requestId}>
-                  <td className="px-6 py-4">{request.requestorName}</td>
-                  <td className="px-6 py-4">{request.approverName || "N/A"}</td>
-                  <td className="px-6 py-4">
-                    {formatDate(request.requestedDate)}
-                  </td>
-                  <td className="px-6 py-4">{formatDate(request.dueDate)}</td>
-                  <td className="px-6 py-4">
-                    {getStatusBadge(request.requestStatus)}
-                  </td>
-                  <td className="px-6 py-4">
-                    <ul className="list-disc pl-4">
-                      {request.details.map((detail, index) => (
-                        <li key={index}>{detail.bookTitle}</li>
-                      ))}
-                    </ul>
-                  </td>
-                  <td className="px-6 py-4 space-x-2">
-                    {request.requestStatus === "WAITING" && (
-                      <>
-                        <button
-                          onClick={() =>
-                            handleStatusUpdate(request.requestId, "APPROVED")
-                          }
-                          className="text-green-600 hover:text-green-900"
-                        >
-                          Approve
-                        </button>
-                        <button
-                          onClick={() =>
-                            handleStatusUpdate(request.requestId, "REJECTED")
-                          }
-                          className="text-red-600 hover:text-red-900"
-                        >
-                          Reject
-                        </button>
-                      </>
-                    )}
-                  </td>
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                    Requestor
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                    Approver
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                    Request Date
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                    Due Date
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                    Status
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                    Books
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                    Actions
+                  </th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-
-          <div className="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6">
-            <div className="flex-1 flex justify-between sm:hidden">
-              <button
-                onClick={() =>
-                  handlePageChange(Math.max(1, filters.pageNumber - 1))
-                }
-                disabled={filters.pageNumber === 1}
-                className="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md bg-white"
-              >
-                Previous
-              </button>
-              <button
-                onClick={() => handlePageChange(filters.pageNumber + 1)}
-                className="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md bg-white"
-              >
-                Next
-              </button>
-            </div>
-            <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
-              <div>
-                <p className="text-sm text-gray-700">
-                  Page <span className="font-medium">{filters.pageNumber}</span>
-                </p>
-              </div>
-              <div>
-                <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px">
-                  <button
-                    onClick={() =>
-                      handlePageChange(Math.max(1, filters.pageNumber - 1))
-                    }
-                    disabled={filters.pageNumber === 1}
-                    className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium hover:bg-gray-50"
-                  >
-                    Previous
-                  </button>
-                  <button
-                    onClick={() => handlePageChange(filters.pageNumber + 1)}
-                    className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium hover:bg-gray-50"
-                  >
-                    Next
-                  </button>
-                </nav>
-              </div>
-            </div>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {requests.length > 0 ? (
+                  requests.map((request) => (
+                    <tr key={request.requestId}>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        {request.requestorName}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        {request.approverName || "N/A"}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        {formatDate(request.requestedDate)}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        {formatDate(request.dueDate)}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        {getStatusBadge(request.requestStatus)}
+                      </td>
+                      <td className="px-6 py-4">
+                        <ul className="list-disc pl-4">
+                          {request.details?.map((detail, index) => (
+                            <li key={index}>{detail.bookTitle}</li>
+                          ))}
+                        </ul>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap space-x-2">
+                        {request.requestStatus === "WAITING" && (
+                          <>
+                            <button
+                              onClick={() =>
+                                handleStatusUpdate(
+                                  request.requestId,
+                                  "APPROVED"
+                                )
+                              }
+                              className="text-green-600 hover:text-green-900"
+                            >
+                              Approve
+                            </button>
+                            <button
+                              onClick={() =>
+                                handleStatusUpdate(
+                                  request.requestId,
+                                  "REJECTED"
+                                )
+                              }
+                              className="text-red-600 hover:text-red-900"
+                            >
+                              Reject
+                            </button>
+                          </>
+                        )}
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan="7" className="px-6 py-4 text-center">
+                      No requests found
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
           </div>
+
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6">
+              <div className="flex-1 flex justify-between sm:hidden">
+                <button
+                  onClick={() =>
+                    handlePageChange(Math.max(1, filters.pageNumber - 1))
+                  }
+                  disabled={filters.pageNumber === 1}
+                  className="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md bg-white"
+                >
+                  Previous
+                </button>
+                <button
+                  onClick={() => handlePageChange(filters.pageNumber + 1)}
+                  disabled={filters.pageNumber >= totalPages}
+                  className="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md bg-white"
+                >
+                  Next
+                </button>
+              </div>
+              <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+                <div>
+                  <p className="text-sm text-gray-700">
+                    Showing page{" "}
+                    <span className="font-medium">{filters.pageNumber}</span> of{" "}
+                    <span className="font-medium">{totalPages}</span>
+                  </p>
+                </div>
+                <div>
+                  <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px">
+                    <button
+                      onClick={() =>
+                        handlePageChange(Math.max(1, filters.pageNumber - 1))
+                      }
+                      disabled={filters.pageNumber === 1}
+                      className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium hover:bg-gray-50 disabled:opacity-50"
+                    >
+                      Previous
+                    </button>
+                    {Array.from({ length: totalPages }, (_, i) => i + 1).map(
+                      (page) => (
+                        <button
+                          key={page}
+                          onClick={() => handlePageChange(page)}
+                          className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${
+                            filters.pageNumber === page
+                              ? "bg-blue-50 border-blue-500 text-blue-600"
+                              : "bg-white border-gray-300 text-gray-700 hover:bg-gray-50"
+                          }`}
+                        >
+                          {page}
+                        </button>
+                      )
+                    )}
+                    <button
+                      onClick={() => handlePageChange(filters.pageNumber + 1)}
+                      disabled={filters.pageNumber >= totalPages}
+                      className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium hover:bg-gray-50 disabled:opacity-50"
+                    >
+                      Next
+                    </button>
+                  </nav>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>
