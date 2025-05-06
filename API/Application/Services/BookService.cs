@@ -13,11 +13,17 @@ public class BookService : IBookService
 {
     private readonly IBookRepository _bookRepository;
     private readonly ICategoryRepository _categoryRepository;
+    private readonly IImageUploader _imageUploader;
 
-    public BookService(IBookRepository bookRepository, ICategoryRepository categoryRepository)
+    public BookService(
+        IBookRepository bookRepository,
+        ICategoryRepository categoryRepository,
+        IImageUploader imageUploader
+    )
     {
         _bookRepository = bookRepository;
         _categoryRepository = categoryRepository;
+        _imageUploader = imageUploader;
     }
 
     public async Task CreateAsync(CreateBookDTO dto)
@@ -30,7 +36,12 @@ public class BookService : IBookService
         var category =
             await _categoryRepository.GetByIdAsync(dto.CategoryId)
             ?? throw new KeyNotFoundException(ErrorMessages.CategoryNotFound);
-        await _bookRepository.AddAsync(dto.ToEntity());
+        var imageUrl = await _imageUploader.UploadImageAsync(dto.Image);
+        var updatedDto = dto with
+        {
+            ImageUrl = imageUrl ?? throw new Exception("Image upload failed"),
+        };
+        await _bookRepository.AddAsync(updatedDto.ToEntity());
         await _bookRepository.SaveChangesAsync();
     }
 
@@ -83,10 +94,12 @@ public class BookService : IBookService
         var category =
             await _categoryRepository.GetByIdAsync(dto.CategoryId)
             ?? throw new KeyNotFoundException(ErrorMessages.CategoryNotFound);
+        var imageUrl = await _imageUploader.UploadImageAsync(dto.Image);
         book.Name = dto.Name;
         book.Author = dto.Author;
         book.CategoryId = dto.CategoryId;
         book.Quantity = dto.Quantity;
+        book.ImageUrl = imageUrl!;
         await _bookRepository.SaveChangesAsync();
     }
 }

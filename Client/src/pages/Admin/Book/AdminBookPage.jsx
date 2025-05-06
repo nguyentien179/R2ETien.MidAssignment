@@ -1,0 +1,217 @@
+import React, { useEffect, useState } from "react";
+import axios from "axios";
+import Swal from "sweetalert2";
+import { Link } from "react-router-dom";
+
+const AdminBooksPage = () => {
+  const [books, setBooks] = useState([]);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState("");
+  const [sortOrder, setSortOrder] = useState("");
+  const [categories, setCategories] = useState([]);
+  const API_URL = import.meta.env.VITE_API_URL;
+
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const response = await axios.get(`${API_URL}/categories`);
+        setCategories(response.data);
+      } catch (error) {
+        console.error("Failed to fetch categories", error);
+      }
+    };
+
+    fetchCategories();
+  }, [API_URL]);
+
+  useEffect(() => {
+    const fetchBooks = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        const params = new URLSearchParams();
+        if (searchQuery) {
+          params.append("nameFilter", searchQuery);
+          params.append("authorFilter", searchQuery);
+        }
+        if (categoryFilter) {
+          const selectedCategory = categories.find(
+            (cat) => cat.name === categoryFilter
+          );
+          if (selectedCategory?.id) {
+            params.append("categoryId", selectedCategory.id);
+          }
+        }
+        if (sortOrder) {
+          params.append("sortOrder", sortOrder);
+        }
+
+        const response = await axios.get(
+          `${API_URL}/books?${params.toString()}`,
+          {
+            withCredentials: true,
+          }
+        );
+        setBooks(response.data);
+      } catch (error) {
+        console.error("Failed to fetch books", error);
+      }
+    };
+
+    fetchBooks();
+  }, [API_URL, searchQuery, categoryFilter, sortOrder, categories]);
+
+  const handleSearchChange = (event) => {
+    setSearchQuery(event.target.value);
+  };
+
+  const handleCategoryChange = (event) => {
+    setCategoryFilter(event.target.value);
+  };
+
+  const handleSortChange = (event) => {
+    setSortOrder(event.target.value);
+  };
+
+  const handleDelete = async (bookId) => {
+    const result = await Swal.fire({
+      title: "Are you sure?",
+      text: "You won't be able to revert this!",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#3085d6",
+      cancelButtonColor: "#d33",
+      confirmButtonText: "Yes, delete it!",
+    });
+
+    if (!result.isConfirmed) return;
+
+    try {
+      await axios.delete(`${API_URL}/books/${bookId}`, {
+        withCredentials: true,
+      });
+      const updatedBooks = books.filter((book) => book.id !== bookId);
+      setBooks(updatedBooks);
+    } catch (error) {
+      if (error.response?.status === 401) {
+        navigate("/login");
+      } else {
+        console.error("Failed to delete book", error);
+        alert("Failed to delete book. Please try again.");
+      }
+    }
+  };
+
+  return (
+    <div className="p-4">
+      <div className="flex justify-between items-center mb-4">
+        <h1 className="text-2xl font-semibold">Books</h1>
+        <Link
+          to="/admin/books/add"
+          className="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded"
+        >
+          Add Book
+        </Link>
+      </div>
+
+      <div className="mb-4 flex items-center space-x-4">
+        <div className="flex items-center">
+          <label htmlFor="search" className="mr-2">
+            Search:
+          </label>
+          <input
+            type="text"
+            id="search"
+            className="border border-gray-300 rounded-md p-2"
+            placeholder="Title or Author"
+            value={searchQuery}
+            onChange={handleSearchChange}
+          />
+        </div>
+
+        <div>
+          <label htmlFor="category" className="mr-2">
+            Category:
+          </label>
+          <select
+            id="category"
+            className="border border-gray-300 rounded-md p-2"
+            value={categoryFilter}
+            onChange={handleCategoryChange}
+          >
+            <option value="">All Categories</option>
+            {categories.map((category) => (
+              <option key={category.id} value={category.name}>
+                {category.name}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div>
+          <label htmlFor="sort" className="mr-2">
+            Sort By:
+          </label>
+          <select
+            id="sort"
+            className="border border-gray-300 rounded-md p-2"
+            value={sortOrder}
+            onChange={handleSortChange}
+          >
+            <option value="">Default</option>
+            <option value="asc">Title (A-Z)</option>
+            <option value="desc">Title (Z-A)</option>
+            <option value="author_asc">Author (A-Z)</option>
+            <option value="author_desc">Author (Z-A)</option>
+          </select>
+        </div>
+      </div>
+
+      <div className="overflow-x-auto">
+        <table className="min-w-full bg-white border border-gray-200">
+          <thead className="bg-gray-100 text-left">
+            <tr>
+              <th className="p-2 w-3/12">Title</th>
+              <th className="p-2 w-3/12">Author</th>
+              <th className="p-2 w-1/12">Category</th>
+              <th className="p-2 w-1/12">Quantity</th>
+              <th className="p-2 w-1/12">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {books.map((book) => (
+              <tr key={book.id} className="border-t border-gray-100">
+                <td className="p-2">{book.title}</td>
+                <td className="p-2">{book.author}</td>
+                <td className="p-2">{book.category}</td>
+                <td className="p-2">{book.quantity}</td>
+                <td className="p-2">
+                  <Link
+                    to={`/admin/books/${book.id}/update`}
+                    className="text-blue-500 hover:underline"
+                  >
+                    Edit
+                  </Link>
+                  <button
+                    onClick={() => handleDelete(book.id)}
+                    className="ml-2 text-red-500 hover:underline"
+                  >
+                    Delete
+                  </button>
+                </td>
+              </tr>
+            ))}
+            {books.length === 0 && (
+              <tr>
+                <td colSpan="5" className="p-4 text-center text-gray-500">
+                  No books available.
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+};
+
+export default AdminBooksPage;

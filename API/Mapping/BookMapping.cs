@@ -15,7 +15,7 @@ public static class BookMapping
             Author = dto.Author,
             CategoryId = dto.CategoryId,
             Quantity = dto.Quantity,
-            ImageUrl = dto.ImageUrl,
+            ImageUrl = dto.ImageUrl!,
         };
     }
 

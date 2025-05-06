@@ -1,6 +1,7 @@
 using System;
 using mid_assignment.Application.Interfaces;
 using mid_assignment.Application.Services;
+using mid_assignment.Infrastructure.Helper;
 using mid_assignment.Infrastructure.Repositories;
 using mid_assignment.Infrastructure.Repositories.Interfaces;
 
@@ -25,6 +26,8 @@ public static class DependencyInjection
 
         services.AddScoped<IBookReviewRepository, BookReviewRepository>();
         services.AddScoped<IBookReviewService, BookReviewService>();
+
+        services.AddScoped<IImageUploader, CloudinaryImageUploader>();
 
         return services;
     }

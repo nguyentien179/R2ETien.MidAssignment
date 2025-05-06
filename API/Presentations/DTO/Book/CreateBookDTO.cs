@@ -5,5 +5,6 @@ public record class CreateBookDTO(
     string Author,
     Guid CategoryId,
     int Quantity,
-    string ImageUrl
+    IFormFile Image,
+    string? ImageUrl
 );
