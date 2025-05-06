@@ -28,7 +28,6 @@ public static class UserEndpoints
             .AddEndpointFilter<ValidationFilter<UserRegisterDTO>>();
         userGroup.MapPost("/login", LoginAsync).AddEndpointFilter<ValidationFilter<UserLoginDTO>>();
         userGroup.MapPost("/logout", LogoutAsync).RequireAuthorization();
-
     }
 
     private static async Task<IResult> DeleteAsync([FromServices] IUserService service, Guid id)

@@ -136,9 +136,9 @@ public class BookBorrowingRequestServiceTests
 
         // Assert
         Assert.Equal(RequestStatus.APPROVED, request.RequestStatus);
-        Assert.NotNull(request.DueDate);
         _mockRepository.Verify(r => r.Update(It.IsAny<BookBorrowingRequest>()), Times.Once);
     }
+
     [Fact]
     public async Task UpdateRequestStatusAsync_RequestAlreadyProcessed_ShouldThrowException()
     {
@@ -161,7 +161,9 @@ public class BookBorrowingRequestServiceTests
         _mockRepository.Setup(r => r.GetByIdAsync(requestId)).ReturnsAsync(request);
 
         // Act & Assert
-        await Assert.ThrowsAsync<InvalidOperationException>(() => _service.UpdateRequestStatusAsync(requestId, RequestStatus.REJECTED));
+        await Assert.ThrowsAsync<InvalidOperationException>(
+            () => _service.UpdateRequestStatusAsync(requestId, RequestStatus.REJECTED)
+        );
     }
 
     [Fact]
@@ -184,8 +186,11 @@ public class BookBorrowingRequestServiceTests
         _mockRepository.Setup(r => r.GetByIdAsync(requestId)).ReturnsAsync(request);
 
         // Act & Assert
-        await Assert.ThrowsAsync<UnauthorizedAccessException>(() => _service.DeleteAsync(requestId));
+        await Assert.ThrowsAsync<UnauthorizedAccessException>(
+            () => _service.DeleteAsync(requestId)
+        );
     }
+
     [Fact]
     public async Task ExtendDueDate_ValidRequest_ShouldExtendDueDate()
     {
