@@ -22,4 +22,7 @@ public interface IUserService
     Task<TokenResponseDTO?> RefreshTokenAsync(string token);
     Guid? GetCurrentUserId();
     bool IsAdmin();
+    Task<UserDTO> GetCurrentUserAsync();
+    Task UpdateAsync(UpdateUserDTO dto, Guid id);
+    Task DeleteAsync(Guid id);
 }

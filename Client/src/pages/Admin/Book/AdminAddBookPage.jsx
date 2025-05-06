@@ -16,7 +16,7 @@ const AdminAddBookPage = () => {
   useEffect(() => {
     const fetchCategories = async () => {
       try {
-        const response = await axios.get(`${API_URL}/categories`, {
+        const response = await axios.get(`${API_URL}/category`, {
           withCredentials: true,
         });
         setCategories(response.data);
@@ -28,19 +28,24 @@ const AdminAddBookPage = () => {
   }, [API_URL]);
 
   const handleImageChange = (e) => {
-    if (e.target.files && e.target.files[0]) {
-      setImage(e.target.files[0]);
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        if (e.target) {
-          setImageUrl(e.target.result);
-        }
-      };
-      reader.readAsDataURL(e.target.files[0]);
-    } else {
-      setImage(null);
-      setImageUrl(null);
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const validTypes = ["image/jpeg", "image/jpg", "image/png"];
+    if (!validTypes.includes(file.type)) {
+      setError("Only JPEG/JPG or PNG images are allowed");
+      return;
     }
+
+    if (file.size > 5 * 1024 * 1024) {
+      setError("Image size must be less than 5MB");
+      return;
+    }
+
+    setImage(file);
+    const reader = new FileReader();
+    reader.onload = (e) => setImageUrl(e.target?.result || null);
+    reader.readAsDataURL(file);
   };
 
   const handleSubmit = async (e) => {
@@ -131,7 +136,7 @@ const AdminAddBookPage = () => {
               >
                 <option value="">Select a category</option>
                 {categories.map((category) => (
-                  <option key={category.id} value={category.id}>
+                  <option key={category.categoryId} value={category.categoryId}>
                     {category.name}
                   </option>
                 ))}

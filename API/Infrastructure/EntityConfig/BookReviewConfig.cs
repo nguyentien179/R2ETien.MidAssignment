@@ -10,6 +10,5 @@ public class BookReviewConfig : IEntityTypeConfiguration<BookReview>
     public void Configure(EntityTypeBuilder<BookReview> builder)
     {
         builder.ToTable("BookReview");
-        builder.HasIndex(br => new { br.BookId, br.UserId }).IsUnique();
     }
 }

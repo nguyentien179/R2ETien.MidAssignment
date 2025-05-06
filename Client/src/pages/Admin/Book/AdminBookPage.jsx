@@ -14,8 +14,9 @@ const AdminBooksPage = () => {
   useEffect(() => {
     const fetchCategories = async () => {
       try {
-        const response = await axios.get(`${API_URL}/categories`);
+        const response = await axios.get(`${API_URL}/category`);
         setCategories(response.data);
+        console.log(response.data);
       } catch (error) {
         console.error("Failed to fetch categories", error);
       }
@@ -27,7 +28,6 @@ const AdminBooksPage = () => {
   useEffect(() => {
     const fetchBooks = async () => {
       try {
-        const token = localStorage.getItem("token");
         const params = new URLSearchParams();
         if (searchQuery) {
           params.append("nameFilter", searchQuery);
@@ -37,8 +37,8 @@ const AdminBooksPage = () => {
           const selectedCategory = categories.find(
             (cat) => cat.name === categoryFilter
           );
-          if (selectedCategory?.id) {
-            params.append("categoryId", selectedCategory.id);
+          if (selectedCategory?.categoryId) {
+            params.append("categoryId", selectedCategory.categoryId);
           }
         }
         if (sortOrder) {
@@ -52,6 +52,7 @@ const AdminBooksPage = () => {
           }
         );
         setBooks(response.data);
+        console.log(response.data);
       } catch (error) {
         console.error("Failed to fetch books", error);
       }
@@ -89,7 +90,7 @@ const AdminBooksPage = () => {
       await axios.delete(`${API_URL}/books/${bookId}`, {
         withCredentials: true,
       });
-      const updatedBooks = books.filter((book) => book.id !== bookId);
+      const updatedBooks = books.filter((book) => book.bookId !== bookId);
       setBooks(updatedBooks);
     } catch (error) {
       if (error.response?.status === 401) {
@@ -140,7 +141,7 @@ const AdminBooksPage = () => {
           >
             <option value="">All Categories</option>
             {categories.map((category) => (
-              <option key={category.id} value={category.name}>
+              <option key={category.categoryId} value={category.name}>
                 {category.name}
               </option>
             ))}
@@ -180,19 +181,19 @@ const AdminBooksPage = () => {
           <tbody>
             {books.map((book) => (
               <tr key={book.id} className="border-t border-gray-100">
-                <td className="p-2">{book.title}</td>
+                <td className="p-2">{book.name}</td>
                 <td className="p-2">{book.author}</td>
-                <td className="p-2">{book.category}</td>
+                <td className="p-2">{book.categoryName}</td>
                 <td className="p-2">{book.quantity}</td>
                 <td className="p-2">
                   <Link
-                    to={`/admin/books/${book.id}/update`}
+                    to={`/admin/books/${book.bookId}/update`}
                     className="text-blue-500 hover:underline"
                   >
                     Edit
                   </Link>
                   <button
-                    onClick={() => handleDelete(book.id)}
+                    onClick={() => handleDelete(book.bookId)}
                     className="ml-2 text-red-500 hover:underline"
                   >
                     Delete

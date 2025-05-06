@@ -20,5 +20,5 @@ public class Book
     public RequestStatus RequestStatus { get; internal set; }
 
     [Timestamp]
-    public byte[] RowVersion { get; set; }
+    public byte[] RowVersion { get; set; } = null!;
 }

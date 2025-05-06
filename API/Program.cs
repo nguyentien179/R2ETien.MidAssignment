@@ -1,9 +1,11 @@
 using System.Security.Claims;
 using System.Text;
+using System.Text.Json.Serialization;
 using System.Threading.RateLimiting;
 using CloudinaryDotNet;
 using FluentValidation;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
@@ -22,11 +24,17 @@ builder.Services.AddValidatorsFromAssemblyContaining<Program>();
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"))
 );
-
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddApplicationServices();
+
+builder
+    .Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        options.JsonSerializerOptions.PropertyNamingPolicy = null;
+    });
 
 // Add rate limiting
 builder.Services.AddRateLimiter(options =>
@@ -90,15 +98,41 @@ builder
         };
     });
 
+builder.Services.AddControllersWithViews(options =>
+{
+    options.Filters.Add<IgnoreAntiforgeryTokenAttribute>();
+});
+builder.Services.AddControllers(options =>
+{
+    options.Filters.Add(new IgnoreAntiforgeryTokenAttribute());
+});
+
+builder.Services.AddAuthorization();
+
 builder.Services.Configure<CloudinarySettings>(
     builder.Configuration.GetSection("CloudinarySettings")
 );
-
+builder.Services.AddAntiforgery(options =>
+{
+    options.SuppressXFrameOptionsHeader = true;
+});
 builder.Services.AddSingleton(sp =>
 {
     var config = sp.GetRequiredService<IOptions<CloudinarySettings>>().Value;
     var account = new Account(config.CloudName, config.ApiKey, config.ApiSecret);
     return new Cloudinary(account);
+});
+
+builder.Services.AddCors(options =>
+{
+    options.AddDefaultPolicy(policy =>
+    {
+        policy
+            .WithOrigins("http://localhost:5173")
+            .AllowAnyHeader()
+            .AllowAnyMethod()
+            .AllowCredentials();
+    });
 });
 var app = builder.Build();
 
@@ -115,6 +149,10 @@ if (app.Environment.IsDevelopment())
         }
     );
 }
+app.UseAuthentication();
+app.UseAuthorization();
+app.UseAntiforgery();
+app.UseCors();
 
 app.UseRateLimiter();
 

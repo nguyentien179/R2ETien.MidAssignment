@@ -172,3 +172,14 @@ D:\dotnet projects\mid-assignment\Test\bin\Debug\net9.0\Swashbuckle.AspNetCore.S
 D:\dotnet projects\mid-assignment\Test\bin\Debug\net9.0\FluentValidation.dll
 D:\dotnet projects\mid-assignment\Test\bin\Debug\net9.0\FluentValidation.AspNetCore.dll
 D:\dotnet projects\mid-assignment\Test\bin\Debug\net9.0\FluentValidation.DependencyInjectionExtensions.dll
+D:\dotnet projects\R2ETien.MidAssignment\Test\bin\Debug\net9.0\.msCoverageSourceRootsMapping_Test
+D:\dotnet projects\R2ETien.MidAssignment\Test\bin\Debug\net9.0\CoverletSourceRootsMapping_Test
+D:\dotnet projects\R2ETien.MidAssignment\Test\obj\Debug\net9.0\Test.csproj.AssemblyReference.cache
+D:\dotnet projects\R2ETien.MidAssignment\Test\obj\Debug\net9.0\Test.GeneratedMSBuildEditorConfig.editorconfig
+D:\dotnet projects\R2ETien.MidAssignment\Test\obj\Debug\net9.0\Test.AssemblyInfoInputs.cache
+D:\dotnet projects\R2ETien.MidAssignment\Test\obj\Debug\net9.0\Test.AssemblyInfo.cs
+D:\dotnet projects\R2ETien.MidAssignment\Test\obj\Debug\net9.0\Test.csproj.CoreCompileInputs.cache
+D:\dotnet projects\R2ETien.MidAssignment\Test\obj\Debug\net9.0\Test.sourcelink.json
+D:\dotnet projects\R2ETien.MidAssignment\Test\obj\Debug\net9.0\Test.dll
+D:\dotnet projects\R2ETien.MidAssignment\Test\obj\Debug\net9.0\refint\Test.dll
+D:\dotnet projects\R2ETien.MidAssignment\Test\obj\Debug\net9.0\Test.pdb

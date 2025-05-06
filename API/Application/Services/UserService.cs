@@ -236,4 +236,28 @@ public class UserService : IUserService
 
         return new TokenResponseDTO(newAccessToken, newRefreshToken);
     }
+
+    public async Task<UserDTO> GetCurrentUserAsync()
+    {
+        var userId =
+            GetCurrentUserId() ?? throw new UnauthorizedAccessException(ErrorMessages.Forbidden);
+        var user =
+            await _userRepository.GetByIdAsync(userId)
+            ?? throw new UnauthorizedAccessException(ErrorMessages.Forbidden);
+        return user.ToDTO();
+    }
+
+    public Task UpdateAsync(UpdateUserDTO dto, Guid id)
+    {
+        throw new NotImplementedException();
+    }
+
+    public async Task DeleteAsync(Guid id)
+    {
+        var user =
+            await _userRepository.GetByIdAsync(id)
+            ?? throw new KeyNotFoundException(ErrorMessages.UserNotFound);
+        _userRepository.Delete(user);
+        await _userRepository.SaveChangesAsync();
+    }
 }

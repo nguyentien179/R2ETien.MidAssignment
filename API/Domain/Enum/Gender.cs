@@ -2,7 +2,7 @@ namespace mid_assignment.Domain.Enum;
 
 public enum Gender
 {
-    Male = 0,
-    Female = 1,
-    Other = 2,
+    MALE = 0,
+    FEMALE = 1,
+    OTHER = 2,
 }

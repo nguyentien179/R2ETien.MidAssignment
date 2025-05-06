@@ -9,7 +9,7 @@ public class BookReview
     public int Rating { get; set; }
 
     public string? Comment { get; set; }
-    public DateOnly ReviewDate { get; set; } = DateOnly.FromDateTime(DateTime.Today);
+    public DateOnly ReviewDate { get; set; } = DateOnly.FromDateTime(DateTime.UtcNow);
 
     public Guid BookId { get; set; }
     public Book Book { get; set; } = null!;

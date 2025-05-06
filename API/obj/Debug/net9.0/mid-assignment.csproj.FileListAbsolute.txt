@@ -332,6 +332,10 @@ D:\dotnet projects\mid-assignment\API\obj\Debug\net9.0\mid-assignment.MvcApplica
 D:\dotnet projects\mid-assignment\API\bin\Debug\net9.0\FluentValidation.dll
 D:\dotnet projects\mid-assignment\API\bin\Debug\net9.0\FluentValidation.AspNetCore.dll
 D:\dotnet projects\mid-assignment\API\bin\Debug\net9.0\FluentValidation.DependencyInjectionExtensions.dll
+D:\dotnet projects\mid-assignment\API\bin\Debug\net9.0\Microsoft.AspNetCore.Authentication.JwtBearer.dll
+D:\dotnet projects\mid-assignment\API\obj\Debug\net9.0\mid-assignment.sourcelink.json
+D:\dotnet projects\mid-assignment\API\bin\Debug\net9.0\CloudinaryDotNet.dll
+D:\dotnet projects\mid-assignment\API\bin\Debug\net9.0\Newtonsoft.Json.dll
 D:\dotnet projects\R2ETien.MidAssignment\API\bin\Debug\net9.0\appsettings.Development.json
 D:\dotnet projects\R2ETien.MidAssignment\API\bin\Debug\net9.0\appsettings.json
 D:\dotnet projects\R2ETien.MidAssignment\API\bin\Debug\net9.0\mid-assignment.staticwebassets.endpoints.json
@@ -342,10 +346,12 @@ D:\dotnet projects\R2ETien.MidAssignment\API\bin\Debug\net9.0\mid-assignment.dll
 D:\dotnet projects\R2ETien.MidAssignment\API\bin\Debug\net9.0\mid-assignment.pdb
 D:\dotnet projects\R2ETien.MidAssignment\API\bin\Debug\net9.0\Azure.Core.dll
 D:\dotnet projects\R2ETien.MidAssignment\API\bin\Debug\net9.0\Azure.Identity.dll
+D:\dotnet projects\R2ETien.MidAssignment\API\bin\Debug\net9.0\CloudinaryDotNet.dll
 D:\dotnet projects\R2ETien.MidAssignment\API\bin\Debug\net9.0\FluentValidation.dll
 D:\dotnet projects\R2ETien.MidAssignment\API\bin\Debug\net9.0\FluentValidation.AspNetCore.dll
 D:\dotnet projects\R2ETien.MidAssignment\API\bin\Debug\net9.0\FluentValidation.DependencyInjectionExtensions.dll
 D:\dotnet projects\R2ETien.MidAssignment\API\bin\Debug\net9.0\Humanizer.dll
+D:\dotnet projects\R2ETien.MidAssignment\API\bin\Debug\net9.0\Microsoft.AspNetCore.Authentication.JwtBearer.dll
 D:\dotnet projects\R2ETien.MidAssignment\API\bin\Debug\net9.0\Microsoft.AspNetCore.OpenApi.dll
 D:\dotnet projects\R2ETien.MidAssignment\API\bin\Debug\net9.0\Microsoft.Bcl.AsyncInterfaces.dll
 D:\dotnet projects\R2ETien.MidAssignment\API\bin\Debug\net9.0\Microsoft.Build.Locator.dll
@@ -384,6 +390,7 @@ D:\dotnet projects\R2ETien.MidAssignment\API\bin\Debug\net9.0\Microsoft.OpenApi.
 D:\dotnet projects\R2ETien.MidAssignment\API\bin\Debug\net9.0\Microsoft.SqlServer.Server.dll
 D:\dotnet projects\R2ETien.MidAssignment\API\bin\Debug\net9.0\Microsoft.Win32.SystemEvents.dll
 D:\dotnet projects\R2ETien.MidAssignment\API\bin\Debug\net9.0\Mono.TextTemplating.dll
+D:\dotnet projects\R2ETien.MidAssignment\API\bin\Debug\net9.0\Newtonsoft.Json.dll
 D:\dotnet projects\R2ETien.MidAssignment\API\bin\Debug\net9.0\Swashbuckle.AspNetCore.Swagger.dll
 D:\dotnet projects\R2ETien.MidAssignment\API\bin\Debug\net9.0\Swashbuckle.AspNetCore.SwaggerGen.dll
 D:\dotnet projects\R2ETien.MidAssignment\API\bin\Debug\net9.0\Swashbuckle.AspNetCore.SwaggerUI.dll
@@ -503,7 +510,5 @@ D:\dotnet projects\R2ETien.MidAssignment\API\obj\Debug\net9.0\refint\mid-assignm
 D:\dotnet projects\R2ETien.MidAssignment\API\obj\Debug\net9.0\mid-assignment.pdb
 D:\dotnet projects\R2ETien.MidAssignment\API\obj\Debug\net9.0\mid-assignment.genruntimeconfig.cache
 D:\dotnet projects\R2ETien.MidAssignment\API\obj\Debug\net9.0\ref\mid-assignment.dll
-D:\dotnet projects\mid-assignment\API\bin\Debug\net9.0\Microsoft.AspNetCore.Authentication.JwtBearer.dll
-D:\dotnet projects\mid-assignment\API\obj\Debug\net9.0\mid-assignment.sourcelink.json
-D:\dotnet projects\mid-assignment\API\bin\Debug\net9.0\CloudinaryDotNet.dll
-D:\dotnet projects\mid-assignment\API\bin\Debug\net9.0\Newtonsoft.Json.dll
+D:\dotnet projects\R2ETien.MidAssignment\API\bin\Debug\net9.0\package-lock.json
+D:\dotnet projects\R2ETien.MidAssignment\API\bin\Debug\net9.0\package.json

@@ -13,8 +13,7 @@ public class User
     public required string Password { get; set; }
     public required string PasswordSalt { get; set; }
     public Gender Gender { get; set; }
-    public Role Role { get; set; }
-
+    public Role Role { get; set; } = Role.USER;
     public ICollection<BookBorrowingRequest>? BorrowingRequests { get; set; }
     public ICollection<BookBorrowingRequest>? ApprovedRequests { get; set; }
     public ICollection<BookReview> Reviews { get; set; } = new List<BookReview>();

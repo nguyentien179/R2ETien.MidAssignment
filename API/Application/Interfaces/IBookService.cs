@@ -15,7 +15,7 @@ public interface IBookService
         int? pageSize = null
     );
     Task<BookDTO?> GetByIdAsync(Guid id);
-    Task CreateAsync(CreateBookDTO dto);
-    Task UpdateAsync(UpdateBookDTO dto, Guid id);
+    Task CreateAsync(CreateBookInputDTO dto);
+    Task UpdateAsync(UpdateBookInputDTO dto, Guid id);
     Task DeleteAsync(Guid id);
 }

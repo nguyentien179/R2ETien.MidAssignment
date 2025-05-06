@@ -8,7 +8,7 @@ public class BookBorrowingRequest
 {
     public Guid RequestId { get; set; }
     public Guid RequestorId { get; set; }
-    public DateOnly RequestedDate { get; set; }
+    public DateOnly RequestedDate { get; set; } = DateOnly.FromDateTime(DateTime.UtcNow);
     public bool Extended { get; set; } = false;
     public RequestStatus RequestStatus { get; set; }
     public Guid? ApproverId { get; set; }
@@ -19,5 +19,5 @@ public class BookBorrowingRequest
     public required ICollection<BookBorrowingRequestDetails> BorrowingRequestDetails { get; set; }
 
     [Timestamp]
-    public byte[] RowVersion { get; set; }
+    public byte[] RowVersion { get; set; } = null!;
 }

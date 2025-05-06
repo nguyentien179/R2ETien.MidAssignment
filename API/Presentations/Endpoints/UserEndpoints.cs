@@ -19,13 +19,41 @@ public static class UserEndpoints
             .MapGroup("")
             .RequireAuthorization(policy => policy.RequireRole(Role.ADMIN.ToString()));
         adminUserGroup.MapGet("/", GetAllAsync);
+        adminUserGroup.MapDelete("/{id:guid}", DeleteAsync);
 
         userGroup.MapGet("/{id:guid}", GetByIdAsync).RequireAuthorization();
+        userGroup.MapGet("/current-user", GetCurrentUserAsync).RequireAuthorization();
         userGroup
             .MapPost("/register", RegisterAsync)
             .AddEndpointFilter<ValidationFilter<UserRegisterDTO>>();
         userGroup.MapPost("/login", LoginAsync).AddEndpointFilter<ValidationFilter<UserLoginDTO>>();
         userGroup.MapPost("/logout", LogoutAsync).RequireAuthorization();
+
+    }
+
+    private static async Task<IResult> DeleteAsync([FromServices] IUserService service, Guid id)
+    {
+        var userId = service.GetCurrentUserId();
+        if (userId == null || userId.Value == id)
+        {
+            return Results.Unauthorized();
+        }
+        await service.DeleteAsync(id);
+        return Results.Ok("User deleted successfully.");
+    }
+
+    private static async Task<IResult> GetCurrentUserAsync([FromServices] IUserService service)
+    {
+        var user = await service.GetCurrentUserAsync();
+        return Results.Ok(
+            new
+            {
+                user.Id,
+                user.Username,
+                user.Email,
+                user.Role
+            }
+        );
     }
 
     private static async Task<IResult> LogoutAsync([FromServices] IUserService service)
@@ -113,6 +141,7 @@ public static class UserEndpoints
             {
                 Username = user.Username,
                 Email = user.Email,
+                Role = user.Role,
                 Token = token,
                 RefreshToken = refreshToken,
             }

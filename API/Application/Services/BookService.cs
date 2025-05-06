@@ -26,7 +26,7 @@ public class BookService : IBookService
         _imageUploader = imageUploader;
     }
 
-    public async Task CreateAsync(CreateBookDTO dto)
+    public async Task CreateAsync(CreateBookInputDTO dto)
     {
         var books = await _bookRepository.GetAllAsync();
         if (books.Any(b => b.Name.Equals(dto.Name, StringComparison.CurrentCultureIgnoreCase)))
@@ -37,11 +37,15 @@ public class BookService : IBookService
             await _categoryRepository.GetByIdAsync(dto.CategoryId)
             ?? throw new KeyNotFoundException(ErrorMessages.CategoryNotFound);
         var imageUrl = await _imageUploader.UploadImageAsync(dto.Image);
-        var updatedDto = dto with
-        {
-            ImageUrl = imageUrl ?? throw new Exception("Image upload failed"),
-        };
-        await _bookRepository.AddAsync(updatedDto.ToEntity());
+        var fullDto = new CreateBookDTO(
+            dto.Name,
+            dto.Author,
+            dto.CategoryId,
+            dto.Quantity,
+            dto.Image,
+            imageUrl!
+        );
+        await _bookRepository.AddAsync(fullDto.ToEntity());
         await _bookRepository.SaveChangesAsync();
     }
 
@@ -80,7 +84,7 @@ public class BookService : IBookService
         return book.ToDTO();
     }
 
-    public async Task UpdateAsync(UpdateBookDTO dto, Guid id)
+    public async Task UpdateAsync(UpdateBookInputDTO dto, Guid id)
     {
         var book =
             await _bookRepository.GetByIdAsync(id)
@@ -94,12 +98,15 @@ public class BookService : IBookService
         var category =
             await _categoryRepository.GetByIdAsync(dto.CategoryId)
             ?? throw new KeyNotFoundException(ErrorMessages.CategoryNotFound);
-        var imageUrl = await _imageUploader.UploadImageAsync(dto.Image);
+        if (dto.Image != null)
+        {
+            var imageUrl = await _imageUploader.UploadImageAsync(dto.Image);
+            book.ImageUrl = imageUrl!;
+        }
         book.Name = dto.Name;
         book.Author = dto.Author;
         book.CategoryId = dto.CategoryId;
         book.Quantity = dto.Quantity;
-        book.ImageUrl = imageUrl!;
         await _bookRepository.SaveChangesAsync();
     }
 }

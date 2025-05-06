@@ -14,8 +14,6 @@ public static class BookBorrowingRequestMapping
         {
             RequestId = requestId,
             RequestorId = dto.RequestorId,
-            RequestedDate = dto.RequestedDate,
-            DueDate = dto.DueDate,
             RequestStatus = RequestStatus.WAITING,
             BorrowingRequestDetails = dto.Details.Select(d => d.ToEntity()).ToList(),
         };

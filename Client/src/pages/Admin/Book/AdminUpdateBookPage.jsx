@@ -9,7 +9,7 @@ const AdminUpdateBookPage = () => {
   const [error, setError] = useState("");
   const [categories, setCategories] = useState([]);
 
-  // Book form state
+  const API_URL = import.meta.env.VITE_API_URL;
   const [formData, setFormData] = useState({
     title: "",
     author: "",
@@ -22,37 +22,39 @@ const AdminUpdateBookPage = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // Fetch book data
-        const bookResponse = await axios.get(`/api/books/${id}`, {
+        const bookResponse = await axios.get(`${API_URL}/books/${id}`, {
           withCredentials: true,
         });
+        console.log(bookResponse.data);
 
-        // Fetch categories
-        const categoriesResponse = await axios.get("/api/categories", {
+        const categoriesResponse = await axios.get(`${API_URL}/category`, {
           withCredentials: true,
         });
 
         setFormData({
-          title: bookResponse.data.title,
+          title: bookResponse.data.name,
           author: bookResponse.data.author,
           quantity: bookResponse.data.quantity,
-          category: bookResponse.data.category._id,
-          existingImage: bookResponse.data.image,
+          category: bookResponse.data.categoryId,
+          existingImage: bookResponse.data.imageUrl,
         });
 
         setCategories(categoriesResponse.data);
-        setLoading(false);
+        console.log(categoriesResponse.data);
       } catch (err) {
         if (err.response?.status === 401) {
           navigate("/login");
         } else {
           setError("Failed to fetch book data");
+          console.log(err.response?.data?.message || err.message);
         }
+      } finally {
+        setLoading(false);
       }
     };
 
     fetchData();
-  }, [id, navigate]);
+  }, [id, API_URL, navigate]);
 
   const handleInputChange = (e) => {
     setFormData({
@@ -74,15 +76,17 @@ const AdminUpdateBookPage = () => {
 
     try {
       const formDataToSend = new FormData();
-      formDataToSend.append("title", formData.title);
-      formDataToSend.append("author", formData.author);
-      formDataToSend.append("quantity", formData.quantity);
-      formDataToSend.append("category", formData.category);
+      formDataToSend.append("Name", formData.title);
+      formDataToSend.append("Author", formData.author);
+      formDataToSend.append("Quantity", formData.quantity);
+      formDataToSend.append("CategoryId", formData.category);
       if (formData.image) {
-        formDataToSend.append("image", formData.image);
+        formDataToSend.append("Image", formData.image);
+      } else {
+        formDataToSend.append("Image", new Blob([]), "empty.jpg");
       }
 
-      await axios.put(`/api/books/${id}`, formDataToSend, {
+      await axios.put(`${API_URL}/books/${id}`, formDataToSend, {
         headers: {
           "Content-Type": "multipart/form-data",
         },
@@ -158,7 +162,7 @@ const AdminUpdateBookPage = () => {
           >
             <option value="">Select a category</option>
             {categories.map((category) => (
-              <option key={category._id} value={category._id}>
+              <option key={category.categoryId} value={category.categoryId}>
                 {category.name}
               </option>
             ))}

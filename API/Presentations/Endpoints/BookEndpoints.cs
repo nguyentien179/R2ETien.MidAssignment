@@ -17,15 +17,18 @@ public static class BookEndpoints
         var bookGroup = group.MapGroup("/books").WithTags("Books");
         var adminBookGroup = bookGroup
             .MapGroup("")
+            .DisableAntiforgery()
             .RequireAuthorization(policy => policy.RequireRole(Role.ADMIN.ToString()));
         bookGroup.MapGet("/", GetAllAsync);
         bookGroup.MapGet("/{id:guid}", GetByIdAsync);
         adminBookGroup
             .MapPost("/", CreateAsync)
-            .AddEndpointFilter<ValidationFilter<CreateBookDTO>>();
+            .AddEndpointFilter<ValidationFilter<CreateBookDTO>>()
+            .WithMetadata(new IgnoreAntiforgeryTokenAttribute());
         adminBookGroup
             .MapPut("/{id:guid}", UpdateAsync)
-            .AddEndpointFilter<ValidationFilter<UpdateBookDTO>>();
+            .AddEndpointFilter<ValidationFilter<UpdateBookDTO>>()
+            .WithMetadata(new IgnoreAntiforgeryTokenAttribute());
         adminBookGroup.MapDelete("/{id:guid}", DeleteAsync);
     }
 
@@ -84,7 +87,7 @@ public static class BookEndpoints
     }
 
     private static async Task<IResult> CreateAsync(
-        [FromBody] CreateBookDTO dto,
+        [FromForm] CreateBookInputDTO dto,
         [FromServices] IBookService bookService
     )
     {
@@ -93,7 +96,7 @@ public static class BookEndpoints
     }
 
     private static async Task<IResult> UpdateAsync(
-        [FromBody] UpdateBookDTO dto,
+        [FromForm] UpdateBookInputDTO dto,
         [FromServices] IBookService bookService,
         Guid id
     )

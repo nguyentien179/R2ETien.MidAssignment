@@ -155,10 +155,9 @@ namespace mid_assignment.Infrastructure.Data.Migrations
 
                     b.HasKey("BookReviewId");
 
-                    b.HasIndex("UserId");
+                    b.HasIndex("BookId");
 
-                    b.HasIndex("BookId", "UserId")
-                        .IsUnique();
+                    b.HasIndex("UserId");
 
                     b.ToTable("BookReview", (string)null);
                 });

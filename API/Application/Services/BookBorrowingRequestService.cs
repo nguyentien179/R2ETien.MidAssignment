@@ -88,7 +88,13 @@ public class BookBorrowingRequestService : IBookBorrowingRequestService
             }
             await ValidateBooksForRequest(dto.Details);
 
-            var request = dto.ToEntity();
+            var currentUserId = _userService.GetCurrentUserId();
+            if (!currentUserId.HasValue)
+            {
+                throw new UnauthorizedAccessException(ErrorMessages.Forbidden);
+            }
+            var updatedDto = dto with { RequestorId = currentUserId.Value };
+            var request = updatedDto.ToEntity();
 
             await UpdateBookQuantities(dto.Details, -1);
 
@@ -99,6 +105,7 @@ public class BookBorrowingRequestService : IBookBorrowingRequestService
         }
         catch (Exception)
         {
+            await transaction.RollbackAsync();
             throw new Exception(ErrorMessages.Conflict);
         }
     }
@@ -135,7 +142,8 @@ public class BookBorrowingRequestService : IBookBorrowingRequestService
     )
     {
         var bookIds = details.Select(d => d.BookId).Distinct().ToList();
-        var books = await _bookRepository.GetBooksByIdsAsync(bookIds);
+
+        var books = (await _bookRepository.GetBooksByIdsAsync(bookIds)).ToList();
 
         foreach (var book in books)
         {
@@ -229,7 +237,6 @@ public class BookBorrowingRequestService : IBookBorrowingRequestService
                     throw new KeyNotFoundException($"Book with ID {detail.BookId} not found.");
 
                 book.Quantity += 1;
-                _bookRepository.Update(book);
             }
         }
 

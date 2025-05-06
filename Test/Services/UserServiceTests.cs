@@ -1,4 +1,5 @@
 using System.Security.Cryptography;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
 using mid_assignment.Application.Services;
 using mid_assignment.Domain.Entities;
@@ -13,13 +14,19 @@ public class UserServiceTests
 {
     private readonly Mock<IUserRepository> _userRepositoryMock;
     private readonly Mock<IConfiguration> _configurationMock;
+    private Mock<IHttpContextAccessor> _httpContextAccessorMock;
     private readonly UserService _userService;
 
     public UserServiceTests()
     {
         _userRepositoryMock = new Mock<IUserRepository>();
         _configurationMock = new Mock<IConfiguration>();
-        _userService = new UserService(_userRepositoryMock.Object, _configurationMock.Object);
+        _httpContextAccessorMock = new Mock<IHttpContextAccessor>();
+        _userService = new UserService(
+            _userRepositoryMock.Object,
+            _configurationMock.Object,
+            _httpContextAccessorMock.Object
+        );
     }
 
     private string HashPassword(string password, string salt)
@@ -136,7 +143,7 @@ public class UserServiceTests
             "password",
             salt,
             "password",
-            Gender.Male,
+            Gender.MALE,
             Role.USER
         );
 
