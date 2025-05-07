@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { useParams, useNavigate } from "react-router-dom";
+import { useAuth } from "../../../components/Header";
 
 const AdminUpdateCategoryPage = () => {
+  const { authAxios } = useAuth();
   const { id } = useParams();
   const navigate = useNavigate();
-  const API_URL = import.meta.env.VITE_API_URL;
 
   const [formData, setFormData] = useState({
     name: "",
@@ -25,9 +26,7 @@ const AdminUpdateCategoryPage = () => {
   useEffect(() => {
     const fetchCategory = async () => {
       try {
-        const response = await axios.get(`${API_URL}/category/${id}`, {
-          withCredentials: true,
-        });
+        const response = await authAxios.get(`/category/${id}`);
 
         setFormData({
           name: response.data.name,
@@ -47,7 +46,7 @@ const AdminUpdateCategoryPage = () => {
     };
 
     fetchCategory();
-  }, [id, API_URL, navigate]);
+  }, [id, authAxios, navigate]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -69,8 +68,7 @@ const AdminUpdateCategoryPage = () => {
         Name: formData.name,
       };
 
-      const response = await axios.put(`${API_URL}/category/${id}`, updateDto, {
-        withCredentials: true,
+      const response = await authAxios.put(`/category/${id}`, updateDto, {
         headers: {
           "Content-Type": "application/json",
         },

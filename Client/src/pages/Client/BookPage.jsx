@@ -66,8 +66,6 @@ const BooksPage = () => {
         );
 
         setBooks(response.data);
-        // If your API returns total pages, set it here
-        // setTotalPages(response.data.totalPages);
       } catch (error) {
         console.error("Failed to fetch books", error);
       } finally {
@@ -83,7 +81,7 @@ const BooksPage = () => {
     setFilters((prev) => ({
       ...prev,
       [name]: value,
-      page: 1, // Reset to first page when filters change
+      page: 1,
     }));
   };
 

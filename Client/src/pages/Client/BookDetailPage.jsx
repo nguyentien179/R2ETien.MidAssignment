@@ -2,7 +2,9 @@ import { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import axios from "axios";
 import StarRating from "../../components/StarRating";
+import { useAuth } from "../../components/Header";
 const BookDetailsPage = () => {
+  const { authAxios } = useAuth();
   const { id } = useParams();
   const [book, setBook] = useState(null);
   const [reviews, setReviews] = useState([]);
@@ -37,16 +39,10 @@ const BookDetailsPage = () => {
   const handleSubmitReview = async (e) => {
     e.preventDefault();
     try {
-      const response = await axios.post(
-        `${API_URL}/bookReview/${id}`,
-        {
-          rating: userReview.rating,
-          comment: userReview.comment,
-        },
-        {
-          withCredentials: true,
-        }
-      );
+      const response = await authAxios.post(`/bookReview/${id}`, {
+        rating: userReview.rating,
+        comment: userReview.comment,
+      });
       setReviews([...reviews, response.data]);
       setUserReview({ rating: 0, comment: "" });
     } catch (err) {

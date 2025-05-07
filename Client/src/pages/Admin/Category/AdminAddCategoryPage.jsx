@@ -1,8 +1,10 @@
 import React, { useState } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "../../../components/Header";
 
 const AdminAddCategoryPage = () => {
+  const { authAxios } = useAuth();
   const [formData, setFormData] = useState({
     name: "",
   });
@@ -31,8 +33,7 @@ const AdminAddCategoryPage = () => {
     setErrors({ name: "", description: "", general: "" });
 
     try {
-      const response = await axios.post(`${API_URL}/category`, formData, {
-        withCredentials: true,
+      const response = await authAxios.post(`/category`, formData, {
         headers: {
           "Content-Type": "application/json",
         },

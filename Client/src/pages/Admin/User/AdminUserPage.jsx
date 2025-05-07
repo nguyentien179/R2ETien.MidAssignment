@@ -2,8 +2,10 @@ import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import Swal from "sweetalert2";
+import { useAuth } from "../../../components/Header";
 
 const AdminUserPage = () => {
+  const { authAxios } = useAuth();
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -14,7 +16,6 @@ const AdminUserPage = () => {
     pageNumber: 1,
     pageSize: 10,
   });
-  const API_URL = import.meta.env.VITE_API_URL;
   const navigate = useNavigate();
 
   const fetchUsers = async () => {
@@ -30,12 +31,7 @@ const AdminUserPage = () => {
       params.append("pageNumber", filters.pageNumber);
       params.append("pageSize", filters.pageSize);
 
-      const response = await axios.get(
-        `${API_URL}/users?${params.toString()}`,
-        {
-          withCredentials: true,
-        }
-      );
+      const response = await authAxios.get(`/users?${params.toString()}`);
 
       setUsers(response.data);
       console.log(response.data);
@@ -84,9 +80,7 @@ const AdminUserPage = () => {
     if (!result.isConfirmed) return;
 
     try {
-      await axios.delete(`${API_URL}/users/${userId}`, {
-        withCredentials: true,
-      });
+      await authAxios.delete(`/users/${userId}`);
 
       setUsers(users.filter((user) => user.Id !== userId));
       alert("User deleted successfully");

@@ -1,8 +1,10 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import axios from "axios";
+import { useAuth } from "../../../components/Header";
 
 const AdminUpdateBookPage = () => {
+  const { authAxios } = useAuth();
   const { id } = useParams();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
@@ -28,14 +30,10 @@ const AdminUpdateBookPage = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const bookResponse = await axios.get(`${API_URL}/books/${id}`, {
-          withCredentials: true,
-        });
+        const bookResponse = await authAxios.get(`/books/${id}`);
         console.log(bookResponse.data);
 
-        const categoriesResponse = await axios.get(`${API_URL}/category`, {
-          withCredentials: true,
-        });
+        const categoriesResponse = await authAxios.get(`/category`);
 
         setFormData({
           name: bookResponse.data.name,
@@ -60,7 +58,7 @@ const AdminUpdateBookPage = () => {
     };
 
     fetchData();
-  }, [id, API_URL, navigate]);
+  }, [id, authAxios, navigate]);
 
   const handleInputChange = (e) => {
     setFormData({
@@ -94,11 +92,10 @@ const AdminUpdateBookPage = () => {
         formDataToSend.append("Image", imageToSend);
       }
 
-      await axios.put(`${API_URL}/books/${id}`, formDataToSend, {
+      await authAxios.put(`/books/${id}`, formDataToSend, {
         headers: {
           "Content-Type": "multipart/form-data",
         },
-        withCredentials: true,
       });
 
       navigate("/admin/books");

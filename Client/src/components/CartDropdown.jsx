@@ -1,10 +1,11 @@
 import { useState, useContext } from "react";
 import { useNavigate } from "react-router-dom";
-import { CartContext } from "./Header";
+import { CartContext, useAuth } from "./Header";
 import axios from "axios";
 import Swal from "sweetalert2";
 
 const CartDropdown = () => {
+  const { authAxios } = useAuth();
   const navigate = useNavigate();
   const { cartItems, removeFromCart, clearCart } = useContext(CartContext);
   const [isCartOpen, setIsCartOpen] = useState(false);
@@ -37,13 +38,12 @@ const CartDropdown = () => {
         Quantity: item.quantity,
       }));
 
-      const response = await axios.post(
-        `${API_URL}/requests`,
+      const response = await authAxios.post(
+        `/requests`,
         {
           Details: requestDetails,
         },
         {
-          withCredentials: true,
           headers: {
             "Content-Type": "application/json",
           },

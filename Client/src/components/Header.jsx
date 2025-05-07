@@ -171,9 +171,6 @@ export const CartProvider = ({ children }) => {
 // Header component
 const Header = () => {
   const { user, logout } = useContext(AuthContext);
-  const { cartItems, removeFromCart } = useContext(CartContext);
-  const [isCartOpen, setIsCartOpen] = useState(false);
-  const navigate = useNavigate();
 
   return (
     <header className="bg-white">

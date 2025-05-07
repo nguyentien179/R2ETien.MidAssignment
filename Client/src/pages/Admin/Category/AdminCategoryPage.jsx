@@ -2,8 +2,10 @@ import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { Link, useNavigate } from "react-router-dom";
 import Swal from "sweetalert2";
+import { useAuth } from "../../../components/Header";
 
 const AdminCategoryPage = () => {
+  const { authAxios } = useAuth();
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -13,9 +15,7 @@ const AdminCategoryPage = () => {
   useEffect(() => {
     const fetchCategories = async () => {
       try {
-        const response = await axios.get(`${API_URL}/category`, {
-          withCredentials: true,
-        });
+        const response = await authAxios.get(`/category`);
         setCategories(response.data);
       } catch (err) {
         if (err.response?.status === 401) {
@@ -30,7 +30,7 @@ const AdminCategoryPage = () => {
     };
 
     fetchCategories();
-  }, [API_URL, navigate]);
+  }, [authAxios, navigate]);
 
   const handleDelete = async (categoryId) => {
     const result = await Swal.fire({
@@ -46,9 +46,7 @@ const AdminCategoryPage = () => {
     if (!result.isConfirmed) return;
 
     try {
-      await axios.delete(`${API_URL}/categories/${categoryId}`, {
-        withCredentials: true,
-      });
+      await authAxios.delete(`/categories/${categoryId}`);
 
       setCategories(categories.filter((cat) => cat.categoryId !== categoryId));
       alert("Category deleted successfully");

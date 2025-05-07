@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
+import { useAuth } from "../../../components/Header";
 
 const AdminAddBookPage = () => {
+  const { authAxios } = useAuth();
   const [title, setTitle] = useState("");
   const [author, setAuthor] = useState("");
   const [categoryId, setCategoryId] = useState("");
@@ -16,16 +18,14 @@ const AdminAddBookPage = () => {
   useEffect(() => {
     const fetchCategories = async () => {
       try {
-        const response = await axios.get(`${API_URL}/category`, {
-          withCredentials: true,
-        });
+        const response = await authAxios.get(`/category`);
         setCategories(response.data);
       } catch (error) {
         setError(error.message);
       }
     };
     fetchCategories();
-  }, [API_URL]);
+  }, [authAxios]);
 
   const handleImageChange = (e) => {
     const file = e.target.files?.[0];
@@ -63,8 +63,7 @@ const AdminAddBookPage = () => {
         formData.append("Image", image);
       }
 
-      const response = await axios.post(`${API_URL}/books`, formData, {
-        withCredentials: true,
+      const response = await authAxios.post(`/books`, formData, {
         headers: {
           "Content-Type": "multipart/form-data",
         },

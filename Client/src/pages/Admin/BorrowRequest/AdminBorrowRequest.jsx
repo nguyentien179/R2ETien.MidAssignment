@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "../../../components/Header";
 
 const AdminBookBorrowingRequestPage = () => {
+  const { authAxios } = useAuth();
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -27,12 +29,7 @@ const AdminBookBorrowingRequestPage = () => {
       params.append("pageNumber", filters.pageNumber);
       params.append("pageSize", filters.pageSize);
 
-      const response = await axios.get(
-        `${API_URL}/requests?${params.toString()}`,
-        {
-          withCredentials: true,
-        }
-      );
+      const response = await authAxios.get(`/requests?${params.toString()}`);
 
       setRequests(response.data.items || response.data);
       console.log(response.data.items || response.data);
@@ -66,9 +63,7 @@ const AdminBookBorrowingRequestPage = () => {
           ? `approve/${requestId}`
           : `reject/${requestId}`;
 
-      await axios.put(`${API_URL}/requests/${endpoint}`, null, {
-        withCredentials: true,
-      });
+      await authAxios.put(`/requests/${endpoint}`, null);
 
       setRequests((prev) =>
         prev.map((request) =>
