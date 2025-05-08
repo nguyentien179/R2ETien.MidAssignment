@@ -91,9 +91,7 @@ const AdminBooksPage = () => {
     if (!result.isConfirmed) return;
 
     try {
-      await axios.delete(`${API_URL}/books/${bookId}`, {
-        withCredentials: true,
-      });
+      await authAxios.delete(`/books/${bookId}`);
       const updatedBooks = books.filter((book) => book.bookId !== bookId);
       setBooks(updatedBooks);
     } catch (error) {

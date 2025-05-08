@@ -188,7 +188,7 @@ const BooksPage = () => {
               value={filters.pageSize}
               onChange={handleFilterChange}
             >
-              <option value="12">12</option>
+              <option value="5">5</option>
               <option value="24">24</option>
               <option value="48">48</option>
             </select>

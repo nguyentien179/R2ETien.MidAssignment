@@ -146,7 +146,7 @@ const AdminBookBorrowingRequestPage = () => {
                 setFilters((prev) => ({
                   ...prev,
                   sortOrder: e.target.value,
-                  pageNumber: 1, // Reset to first page when sort changes
+                  pageNumber: 1,
                 }))
               }
               className="w-full p-2 border rounded"
@@ -169,7 +169,7 @@ const AdminBookBorrowingRequestPage = () => {
                 setFilters((prev) => ({
                   ...prev,
                   pageSize: Number(e.target.value),
-                  pageNumber: 1, // Reset to first page when page size changes
+                  pageNumber: 1,
                 }))
               }
               className="w-full p-2 border rounded"

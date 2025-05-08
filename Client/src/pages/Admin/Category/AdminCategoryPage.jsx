@@ -46,7 +46,7 @@ const AdminCategoryPage = () => {
     if (!result.isConfirmed) return;
 
     try {
-      await authAxios.delete(`/categories/${categoryId}`);
+      await authAxios.delete(`/category/${categoryId}`);
 
       setCategories(categories.filter((cat) => cat.categoryId !== categoryId));
       alert("Category deleted successfully");
